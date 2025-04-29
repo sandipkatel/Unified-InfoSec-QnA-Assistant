@@ -286,14 +286,26 @@ export default function UnifiedQnAAssistant() {
 
   // Simulate voice recording
   const toggleRecording = () => {
+    // if (recording) {
+    //   setRecording(false);
+    //   // Simulate voice recognition result
+    //   setTimeout(() => {
+    //     setInputMessage("What are our policies regarding third-party vendors?");
+    //   }, 1000);
+    // } else {
+    //   setRecording(true);
+    // }
     if (recording) {
       setRecording(false);
-      // Simulate voice recognition result
-      setTimeout(() => {
-        setInputMessage("What are our policies regarding third-party vendors?");
-      }, 1000);
     } else {
       setRecording(true);
+      let recognization = new webkitSpeechRecognition();
+      recognization.onresult = (e) => {
+        var transcript = e.results[0][0].transcript;
+        setInputMessage(transcript);
+        setRecording(false);
+      };
+      recognization.start();
     }
   };
 
@@ -1023,7 +1035,7 @@ export default function UnifiedQnAAssistant() {
                               <input
                                 type="checkbox"
                                 checked={chatFeedback === "flag-review"}
-                                onClick={() => setChatFeedback("flag-review")}
+                                onChange={() => setChatFeedback("flag-review")}
                               />
                             </div>
                           </div>
