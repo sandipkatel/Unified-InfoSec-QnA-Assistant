@@ -53,6 +53,7 @@ export default function UnifiedQnAAssistant() {
     "Network Security",
     "Compliance",
   ]);
+  const [chatFeedback, setChatFeedback] = useState(null);
 
   // Handle drag events
   const handleDrag = (e) => {
@@ -107,6 +108,7 @@ export default function UnifiedQnAAssistant() {
             suggestedAnswer:
               "Yes, our organization maintains a comprehensive Information Security Policy that is reviewed annually and approved by executive leadership.",
             confidence: "high",
+            // confidence: "high(90%)",
             references: [
               "InfoSec Policy v3.2, Section 1.1",
               "ISO 27001 Certification Document",
@@ -119,6 +121,7 @@ export default function UnifiedQnAAssistant() {
             suggestedAnswer:
               "Our organization conducts penetration testing on a quarterly basis, with results reviewed by the security team and remediation plans implemented within 30 days.",
             confidence: "high",
+            // confidence: "high(92%)",
             references: [
               "Security Testing Procedure, Section 4.2",
               "Last Penetration Test Report (March 2025)",
@@ -130,6 +133,7 @@ export default function UnifiedQnAAssistant() {
             suggestedAnswer:
               "Our incident response plan follows NIST guidelines with defined roles, communication procedures, and containment strategies. The plan is tested bi-annually through tabletop exercises.",
             confidence: "medium",
+            // confidence: "medium(70%)",
             references: ["Incident Response Plan v2.1", "IR Exercise Reports"],
           },
           {
@@ -138,6 +142,7 @@ export default function UnifiedQnAAssistant() {
             suggestedAnswer:
               "We implement AES-256 encryption for all data at rest, with keys managed through a dedicated key management system with rotation policies.",
             confidence: "low",
+            // confidence: "low(33%)",
             references: ["Encryption Policy, Section 3.4"],
           },
         ],
@@ -1027,26 +1032,35 @@ export default function UnifiedQnAAssistant() {
                             <div className="flex space-x-2">
                               <button
                                 onClick={() =>
-                                  showNotification(
-                                    "Feedback received. Thank you!",
-                                    "success"
-                                  )
+                                  // showNotification(
+                                  //   "Feedback received. Thank you!",
+                                  //   "success"
+                                  // )
+                                  setChatFeedback("thumbs-up")
                                 }
-                                className="p-1 hover:text-green-500 transition"
+                                className={
+                                  chatFeedback === "thumbs-up"
+                                    ? "p-1 text-green-700"
+                                    : "p-1 hover:text-green-400 transition"
+                                }
                               >
                                 <ThumbsUp className="h-3 w-3" />
                               </button>
                               <button
-                                onClick={() =>
-                                  showNotification(
-                                    "Feedback received. We'll improve our response.",
-                                    "info"
-                                  )
+                                onClick={() => setChatFeedback("thumbs-down")}
+                                className={
+                                  chatFeedback === "thumbs-down"
+                                    ? "p-1 text-red-700"
+                                    : "p-1 hover:text-red-400 transition"
                                 }
-                                className="p-1 hover:text-red-500 transition"
                               >
                                 <ThumbsDown className="h-3 w-3" />
                               </button>
+                              <input
+                                type="checkbox"
+                                checked={chatFeedback === "flag-review"}
+                                onClick={() => setChatFeedback("flag-review")}
+                              />
                             </div>
                           </div>
                         )}

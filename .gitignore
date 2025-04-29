@@ -1,0 +1,5 @@
+# ignore Temp folder
+Temp/*
+
+# Igonre model
+**/Model/*
