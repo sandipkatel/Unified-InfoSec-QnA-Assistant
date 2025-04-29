@@ -55,9 +55,3 @@ def analyze_questionnaire(request):
         ]
     }
     return Response(results)
-
-def convert_speech_to_text(request):
-    """
-    This function uses the SpeechRecognition library to convert speech to text.
-    """
-    return speech_to_text(request)

@@ -21,6 +21,4 @@ from .views import analyze_questionnaire
 urlpatterns = [
     path('admin/', admin.site.urls),
     path ('analyze/', analyze_questionnaire, name = 'analyze_questionnaire'),
-    path ('speech-to-text/', analyze_questionnaire, name = 'convert_speech_to_text'
-    ),
 ]
