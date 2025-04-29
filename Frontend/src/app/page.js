@@ -65,9 +65,6 @@ export default function UnifiedQnAAssistant() {
 
   // Process questionnaire
   const processQuestionnaire = () => {
-    setIsProcessing(true);
-
-    // Simulate processing delay
     setTimeout(() => {
       // Mock results
       setResults({
@@ -123,6 +120,20 @@ export default function UnifiedQnAAssistant() {
       });
       setIsProcessing(false);
     }, 2000);
+    // setIsProcessing(true);
+
+    // fetch("http://localhost:8080/analyze/", {
+    //   method: "POST",
+    //   headers: {
+    //     "Content-Type": "application/json",
+    //   },
+    //   body: JSON.stringify({}), // Add real input if needed
+    // })
+    //   .then((res) => res.json())
+    //   .then((data) => {
+    //     setResults(data);
+    //     setIsProcessing(false);
+    //   });
   };
 
   // Toggle details for a specific question
