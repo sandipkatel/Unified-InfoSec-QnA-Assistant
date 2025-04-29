@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Search,
   Upload,
@@ -12,17 +12,6 @@ import {
   X,
   Send,
   Info,
-  Moon,
-  Sun,
-  Filter,
-  Download,
-  Mic,
-  ThumbsUp,
-  ThumbsDown,
-  Save,
-  History,
-  Bell,
-  CheckSquare,
 } from "lucide-react";
 
 export default function UnifiedQnAAssistant() {
@@ -40,19 +29,6 @@ export default function UnifiedQnAAssistant() {
   ]);
   const [inputMessage, setInputMessage] = useState("");
   const [showDetails, setShowDetails] = useState({});
-  const [darkMode, setDarkMode] = useState(false);
-  const [confidenceFilter, setConfidenceFilter] = useState("all");
-  const [selectedQuestions, setSelectedQuestions] = useState([]);
-  const [notification, setNotification] = useState(null);
-  const [recording, setRecording] = useState(false);
-  const [quickFilters] = useState([
-    "Access Control",
-    "Encryption",
-    "Data Privacy",
-    "Incident Response",
-    "Network Security",
-    "Compliance",
-  ]);
 
   // Handle drag events
   const handleDrag = (e) => {
@@ -233,161 +209,47 @@ export default function UnifiedQnAAssistant() {
     }
   };
 
-  // Toggle dark mode
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [darkMode]);
-
-  // Show notification
-  const showNotification = (message, type = "info") => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification(null), 5000);
-  };
-
-  // Filter questions based on confidence
-  const filteredQuestions = results
-    ? results.questions.filter((q) => {
-        if (confidenceFilter === "all") return true;
-        return q.confidence === confidenceFilter;
-      })
-    : [];
-
-  // Handle bulk actions
-  const handleBulkAction = (action) => {
-    if (selectedQuestions.length === 0) return;
-
-    // Simulate bulk action
-    showNotification(
-      `${action} applied to ${selectedQuestions.length} questions`,
-      "success"
-    );
-    setSelectedQuestions([]);
-  };
-
-  // Simulate voice recording
-  const toggleRecording = () => {
-    if (recording) {
-      setRecording(false);
-      // Simulate voice recognition result
-      setTimeout(() => {
-        setInputMessage("What are our policies regarding third-party vendors?");
-      }, 1000);
-    } else {
-      setRecording(true);
-    }
-  };
-
   return (
-    <div
-      className={`flex flex-col min-h-screen ${
-        darkMode
-          ? "bg-gray-900 text-gray-100"
-          : "bg-gradient-to-br from-indigo-50 to-blue-100"
-      }`}
-    >
-      {/* Notification */}
-      {notification && (
-        <div
-          className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2 ${
-            notification.type === "success"
-              ? "bg-green-500 text-white"
-              : notification.type === "error"
-              ? "bg-red-500 text-white"
-              : "bg-blue-500 text-white"
-          }`}
-        >
-          <span>{notification.message}</span>
-          <button onClick={() => setNotification(null)}>
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100">
       {/* Header */}
-      <header
-        className={`${
-          darkMode
-            ? "bg-gray-800 text-white"
-            : "bg-gradient-to-r from-blue-600 to-indigo-700 text-white"
-        } shadow-lg`}
-      >
+      <header className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div
-                className={`${
-                  darkMode ? "bg-gray-700" : "bg-white"
-                } rounded-full p-2`}
-              >
-                <Search
-                  className={`h-6 w-6 ${
-                    darkMode ? "text-blue-400" : "text-blue-600"
-                  }`}
-                />
+              <div className="bg-white rounded-full p-2">
+                <Search className="h-6 w-6 text-blue-600" />
               </div>
               <h1 className="text-2xl font-bold">
                 Unified InfoSec QnA Assistant
               </h1>
             </div>
-
-            <div className="flex items-center space-x-4">
-              {/* Dark Mode Toggle */}
+            <div className="flex space-x-2">
               <button
-                onClick={() => setDarkMode(!darkMode)}
-                className={`p-2 rounded-full ${
-                  darkMode
-                    ? "bg-gray-700 text-yellow-300"
-                    : "bg-blue-700 text-white"
+                onClick={() => setActiveTab("batch")}
+                className={`px-4 py-2 rounded-t-lg font-medium transition ${
+                  activeTab === "batch"
+                    ? "bg-white text-blue-700"
+                    : "bg-blue-700 text-white hover:bg-blue-800"
                 }`}
               >
-                {darkMode ? (
-                  <Sun className="h-5 w-5" />
-                ) : (
-                  <Moon className="h-5 w-5" />
-                )}
+                <div className="flex items-center space-x-2">
+                  <FileText className="h-5 w-5" />
+                  <span>Batch Mode</span>
+                </div>
               </button>
-
-              {/* Mode Tabs */}
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => setActiveTab("batch")}
-                  className={`px-4 py-2 rounded-t-lg font-medium transition ${
-                    activeTab === "batch"
-                      ? darkMode
-                        ? "bg-gray-700 text-blue-300"
-                        : "bg-white text-blue-700"
-                      : darkMode
-                      ? "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                      : "bg-blue-700 text-white hover:bg-blue-800"
-                  }`}
-                >
-                  <div className="flex items-center space-x-2">
-                    <FileText className="h-5 w-5" />
-                    <span>Batch Mode</span>
-                  </div>
-                </button>
-                <button
-                  onClick={() => setActiveTab("chat")}
-                  className={`px-4 py-2 rounded-t-lg font-medium transition ${
-                    activeTab === "chat"
-                      ? darkMode
-                        ? "bg-gray-700 text-blue-300"
-                        : "bg-white text-blue-700"
-                      : darkMode
-                      ? "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                      : "bg-blue-700 text-white hover:bg-blue-800"
-                  }`}
-                >
-                  <div className="flex items-center space-x-2">
-                    <MessageSquare className="h-5 w-5" />
-                    <span>Conversational Mode</span>
-                  </div>
-                </button>
-              </div>
+              <button
+                onClick={() => setActiveTab("chat")}
+                className={`px-4 py-2 rounded-t-lg font-medium transition ${
+                  activeTab === "chat"
+                    ? "bg-white text-blue-700"
+                    : "bg-blue-700 text-white hover:bg-blue-800"
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <MessageSquare className="h-5 w-5" />
+                  <span>Conversational Mode</span>
+                </div>
+              </button>
             </div>
           </div>
         </div>
@@ -578,187 +440,33 @@ export default function UnifiedQnAAssistant() {
                   </div>
                 </div>
 
-                {/* Filter Controls */}
-                <div className="flex justify-between items-center mb-4">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                      Filter by confidence:
-                    </span>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => setConfidenceFilter("all")}
-                        className={`px-3 py-1 text-xs font-medium rounded-full ${
-                          confidenceFilter === "all"
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-                        }`}
-                      >
-                        All
-                      </button>
-                      <button
-                        onClick={() => setConfidenceFilter("high")}
-                        className={`px-3 py-1 text-xs font-medium rounded-full ${
-                          confidenceFilter === "high"
-                            ? "bg-green-600 text-white"
-                            : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-                        }`}
-                      >
-                        High
-                      </button>
-                      <button
-                        onClick={() => setConfidenceFilter("medium")}
-                        className={`px-3 py-1 text-xs font-medium rounded-full ${
-                          confidenceFilter === "medium"
-                            ? "bg-yellow-600 text-white"
-                            : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-                        }`}
-                      >
-                        Medium
-                      </button>
-                      <button
-                        onClick={() => setConfidenceFilter("low")}
-                        className={`px-3 py-1 text-xs font-medium rounded-full ${
-                          confidenceFilter === "low"
-                            ? "bg-red-600 text-white"
-                            : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-                        }`}
-                      >
-                        Low
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Bulk Actions */}
-                  <div className="flex items-center space-x-2">
-                    {selectedQuestions.length > 0 && (
-                      <>
-                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                          {selectedQuestions.length} selected
-                        </span>
-                        <button
-                          onClick={() => handleBulkAction("Accept")}
-                          className="px-3 py-1 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700"
-                        >
-                          Accept All
-                        </button>
-                        <button
-                          onClick={() => handleBulkAction("Flag for Review")}
-                          className="px-3 py-1 bg-yellow-600 text-white text-sm rounded-lg hover:bg-yellow-700"
-                        >
-                          Flag All
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-
                 {/* Results Table */}
-                <div
-                  className={`border ${
-                    darkMode ? "border-gray-700" : "border-gray-200"
-                  } rounded-lg overflow-hidden mb-6`}
-                >
-                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead className={darkMode ? "bg-gray-800" : "bg-gray-100"}>
+                <div className="border border-gray-200 rounded-lg overflow-hidden mb-6">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-100">
                       <tr>
-                        <th className="px-2 py-3 text-center">
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4"
-                            checked={
-                              selectedQuestions.length ===
-                                filteredQuestions.length &&
-                              filteredQuestions.length > 0
-                            }
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedQuestions(
-                                  filteredQuestions.map((q) => q.id)
-                                );
-                              } else {
-                                setSelectedQuestions([]);
-                              }
-                            }}
-                          />
-                        </th>
-                        <th
-                          className={`px-6 py-3 text-left text-xs font-medium ${
-                            darkMode ? "text-gray-300" : "text-gray-500"
-                          } uppercase tracking-wider`}
-                        >
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Question
                         </th>
-                        <th
-                          className={`px-6 py-3 text-left text-xs font-medium ${
-                            darkMode ? "text-gray-300" : "text-gray-500"
-                          } uppercase tracking-wider`}
-                        >
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Suggested Answer
                         </th>
-                        <th
-                          className={`px-6 py-3 text-left text-xs font-medium ${
-                            darkMode ? "text-gray-300" : "text-gray-500"
-                          } uppercase tracking-wider`}
-                        >
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Confidence
                         </th>
-                        <th
-                          className={`px-6 py-3 text-left text-xs font-medium ${
-                            darkMode ? "text-gray-300" : "text-gray-500"
-                          } uppercase tracking-wider`}
-                        >
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Actions
                         </th>
                       </tr>
                     </thead>
-                    <tbody
-                      className={`${
-                        darkMode
-                          ? "bg-gray-900 divide-y divide-gray-800"
-                          : "bg-white divide-y divide-gray-200"
-                      }`}
-                    >
-                      {filteredQuestions.map((item) => (
-                        <tr
-                          key={item.id}
-                          className={`${
-                            darkMode ? "hover:bg-gray-800" : "hover:bg-gray-50"
-                          }`}
-                        >
-                          <td className="px-2 py-4 text-center">
-                            <input
-                              type="checkbox"
-                              className="h-4 w-4"
-                              checked={selectedQuestions.includes(item.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedQuestions([
-                                    ...selectedQuestions,
-                                    item.id,
-                                  ]);
-                                } else {
-                                  setSelectedQuestions(
-                                    selectedQuestions.filter(
-                                      (id) => id !== item.id
-                                    )
-                                  );
-                                }
-                              }}
-                            />
-                          </td>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {results.questions.map((item) => (
+                        <tr key={item.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4">
-                            <div
-                              className={`text-sm font-medium ${
-                                darkMode ? "text-gray-200" : "text-gray-900"
-                              }`}
-                            >
+                            <div className="text-sm font-medium text-gray-900">
                               {item.id}
                             </div>
-                            <div
-                              className={`text-md ${
-                                darkMode ? "text-gray-300" : "text-gray-700"
-                              }`}
-                            >
+                            <div className="text-md text-gray-700">
                               {item.question}
                             </div>
                           </td>
@@ -894,27 +602,6 @@ export default function UnifiedQnAAssistant() {
             <div className="bg-white rounded-lg shadow-xl flex flex-col h-[600px] overflow-hidden order-1 md:order-2 md:col-span-3">
               {/* Chat Messages */}
               <div className="flex-grow p-6 overflow-y-auto">
-                {/* Quick Filters */}
-                <div className="mb-4 flex flex-wrap gap-2">
-                  {quickFilters.map((filter) => (
-                    <button
-                      key={filter}
-                      onClick={() => {
-                        setInputMessage(
-                          `Tell me about our ${filter.toLowerCase()} policies`
-                        );
-                      }}
-                      className={`px-3 py-1 text-xs font-medium rounded-full transition ${
-                        darkMode
-                          ? "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                      }`}
-                    >
-                      {filter}
-                    </button>
-                  ))}
-                </div>
-
                 <div className="space-y-4">
                   {chatMessages.map((msg, idx) => (
                     <div
@@ -928,11 +615,7 @@ export default function UnifiedQnAAssistant() {
                           msg.type === "user"
                             ? "bg-blue-600 text-white"
                             : msg.type === "system"
-                            ? darkMode
-                              ? "bg-gray-800 text-gray-200 border border-gray-700"
-                              : "bg-gray-100 text-gray-800 border border-gray-200"
-                            : darkMode
-                            ? "bg-indigo-900 text-gray-200 border border-indigo-800"
+                            ? "bg-gray-100 text-gray-800 border border-gray-200"
                             : "bg-indigo-50 text-gray-800 border border-indigo-100"
                         }`}
                       >
@@ -942,67 +625,15 @@ export default function UnifiedQnAAssistant() {
                         {msg.type === "assistant" &&
                           msg.references &&
                           msg.references.length > 0 && (
-                            <div
-                              className={`mt-2 pt-2 ${
-                                darkMode
-                                  ? "border-t border-indigo-800"
-                                  : "border-t border-indigo-200"
-                              }`}
-                            >
-                              <div
-                                className={`text-xs font-medium ${
-                                  darkMode
-                                    ? "text-indigo-400"
-                                    : "text-indigo-700"
-                                } mb-1`}
-                              >
+                            <div className="mt-2 pt-2 border-t border-indigo-200">
+                              <div className="text-xs font-medium text-indigo-700 mb-1">
                                 References:
                               </div>
-                              <div
-                                className={`text-xs ${
-                                  darkMode
-                                    ? "text-indigo-400"
-                                    : "text-indigo-600"
-                                }`}
-                              >
+                              <div className="text-xs text-indigo-600">
                                 {msg.references.join(" • ")}
                               </div>
                             </div>
                           )}
-
-                        {/* Feedback buttons for assistant messages */}
-                        {msg.type === "assistant" && (
-                          <div
-                            className={`mt-2 flex justify-end ${
-                              darkMode ? "text-gray-400" : "text-gray-500"
-                            }`}
-                          >
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() =>
-                                  showNotification(
-                                    "Feedback received. Thank you!",
-                                    "success"
-                                  )
-                                }
-                                className="p-1 hover:text-green-500 transition"
-                              >
-                                <ThumbsUp className="h-3 w-3" />
-                              </button>
-                              <button
-                                onClick={() =>
-                                  showNotification(
-                                    "Feedback received. We'll improve our response.",
-                                    "info"
-                                  )
-                                }
-                                className="p-1 hover:text-red-500 transition"
-                              >
-                                <ThumbsDown className="h-3 w-3" />
-                              </button>
-                            </div>
-                          </div>
-                        )}
                       </div>
                     </div>
                   ))}
@@ -1010,13 +641,7 @@ export default function UnifiedQnAAssistant() {
               </div>
 
               {/* Input Area */}
-              <div
-                className={`border-t ${
-                  darkMode
-                    ? "border-gray-700 bg-gray-800"
-                    : "border-gray-200 bg-gray-50"
-                } p-4`}
-              >
+              <div className="border-t border-gray-200 p-4 bg-gray-50">
                 <div className="flex space-x-2">
                   <input
                     type="text"
@@ -1024,58 +649,24 @@ export default function UnifiedQnAAssistant() {
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder="Ask about security policies, compliance requirements, etc."
-                    className={`flex-grow rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      darkMode
-                        ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                        : "bg-white border-gray-300 text-gray-700"
-                    }`}
+                    className="text-gray-800 flex-grow rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
-
-                  {/* Voice Input Button */}
-                  <button
-                    onClick={toggleRecording}
-                    className={`rounded-lg p-2 ${
-                      recording
-                        ? "bg-red-600 text-white"
-                        : darkMode
-                        ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                    } transition relative`}
-                  >
-                    <Mic className="h-5 w-5" />
-                    {recording && (
-                      <span className="flex h-3 w-3 absolute -top-1 -right-1">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                      </span>
-                    )}
-                  </button>
-
-                  {/* History Button */}
-                  <button
-                    className={`rounded-lg p-2 ${
-                      darkMode
-                        ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                    } transition`}
-                    onClick={() =>
-                      showNotification("Chat history opened", "info")
-                    }
-                  >
-                    <History className="h-5 w-5" />
-                  </button>
-
-                  {/* Send Button */}
                   <button
                     onClick={submitMessage}
+                    disabled={!inputMessage.trim()}
                     className={`rounded-lg p-2 ${
-                      darkMode
-                        ? "bg-blue-600 text-white hover:bg-blue-700"
-                        : "bg-blue-500 text-white hover:bg-blue-600"
+                      !inputMessage.trim()
+                        ? "bg-gray-300 text-gray-500"
+                        : "bg-blue-600 text-white hover:bg-blue-700"
                     } transition`}
                   >
                     <Send className="h-5 w-5" />
                   </button>
+                </div>
+                <div className="mt-2 text-xs text-gray-500 flex items-center">
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  Responses are generated based on your organization's security
+                  knowledge base
                 </div>
               </div>
             </div>
