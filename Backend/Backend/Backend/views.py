@@ -122,12 +122,14 @@ def analyze_question(request):
             "all_matches": content_matches
         }
         
+        if not manager.active_thread:
+            thread_id = manager.create_thread(user_id)
+            manager.select_thread(thread_id)
         user_message = query
         manager.add_message(user_id, manager.active_thread, "user", user_message)
         
         # Simulate assistant response
         assistant_response = results["content"]
-        print("Assistant response:", assistant_response)
         manager.add_message(user_id, manager.active_thread, "system", assistant_response)
 
         return Response(results)
