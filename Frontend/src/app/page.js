@@ -89,81 +89,79 @@ export default function UnifiedQnAAssistant() {
   };
 
   // Process questionnaire
-  const processQuestionnaire = () => {
-    setTimeout(() => {
-      // Mock results
-      setResults({
-        totalQuestions: 15,
-        answeredQuestions: 15,
-        confidence: {
-          high: 9,
-          medium: 4,
-          low: 2,
-        },
-        questions: [
-          {
-            id: "Q1",
-            question:
-              "Does your organization have a documented information security policy?",
-            suggestedAnswer:
-              "Yes, our organization maintains a comprehensive Information Security Policy that is reviewed annually and approved by executive leadership.",
-            confidence: "high",
-            // confidence: "high(90%)",
-            references: [
-              "InfoSec Policy v3.2, Section 1.1",
-              "ISO 27001 Certification Document",
-            ],
-          },
-          {
-            id: "Q2",
-            question:
-              "How often does your organization perform penetration testing?",
-            suggestedAnswer:
-              "Our organization conducts penetration testing on a quarterly basis, with results reviewed by the security team and remediation plans implemented within 30 days.",
-            confidence: "high",
-            // confidence: "high(92%)",
-            references: [
-              "Security Testing Procedure, Section 4.2",
-              "Last Penetration Test Report (March 2025)",
-            ],
-          },
-          {
-            id: "Q3",
-            question: "Describe your organization's incident response plan.",
-            suggestedAnswer:
-              "Our incident response plan follows NIST guidelines with defined roles, communication procedures, and containment strategies. The plan is tested bi-annually through tabletop exercises.",
-            confidence: "medium",
-            // confidence: "medium(70%)",
-            references: ["Incident Response Plan v2.1", "IR Exercise Reports"],
-          },
-          {
-            id: "Q4",
-            question: "What encryption standards are used for data at rest?",
-            suggestedAnswer:
-              "We implement AES-256 encryption for all data at rest, with keys managed through a dedicated key management system with rotation policies.",
-            confidence: "low",
-            // confidence: "low(33%)",
-            references: ["Encryption Policy, Section 3.4"],
-          },
-        ],
-      });
-      setIsProcessing(false);
-    }, 2000);
-    // setIsProcessing(true);
+  const processQuestionnaire = async () => {
+    if (!selectedFile) {
+      console.error("No file selected");
+      return;
+    }
 
-    // fetch("http://localhost:8080/analyze/", {
-    //   method: "POST",
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //   },
-    //   body: JSON.stringify({}), // Add real input if needed
-    // })
-    //   .then((res) => res.json())
-    //   .then((data) => {
-    //     setResults(data);
-    //     setIsProcessing(false);
-    //   });
+    setIsProcessing(true); // Show processing indicator
+
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      const response = await fetch("http://localhost:8080/batch/", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("File uploaded successfully:", data);
+
+      // Process the response data
+      if (data && data.results) {
+        const questions = data.results;
+
+        // Calculate confidence metrics
+        const confidenceCounts = {
+          high: 0,
+          medium: 0,
+          low: 0,
+        };
+
+        // Count the confidence levels
+        questions.forEach((question) => {
+          if (question.confidence in confidenceCounts) {
+            confidenceCounts[question.confidence]++;
+          }
+        });
+
+        // Set the results with the appropriate format
+        setResults({
+          totalQuestions: questions.length,
+          answeredQuestions: questions.length, // Assuming all questions were answered
+          confidence: confidenceCounts,
+          questions: questions,
+        });
+      } else {
+        throw new Error("Invalid response format from server");
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      // Show error message to user
+      setError(`Failed to process questionnaire: ${error.message}`);
+    } finally {
+      setIsProcessing(false); // Hide processing indicator
+    }
   };
+  // setIsProcessing(true);
+
+  // fetch("http://localhost:8080/analyze/", {
+  //   method: "POST",
+  //   headers: {
+  //     "Content-Type": "application/json",
+  //   },
+  //   body: JSON.stringify({}), // Add real input if needed
+  // })
+  //   .then((res) => res.json())
+  //   .then((data) => {
+  //     setResults(data);
+  //     setIsProcessing(false);
 
   // Toggle details for a specific question
   const toggleDetails = (id) => {
