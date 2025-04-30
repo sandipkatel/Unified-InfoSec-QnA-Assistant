@@ -1,0 +1,7 @@
+timestamp,role,content
+2025-04-30T12:08:33.575858,user,Access Control Policy
+2025-04-30T12:08:34.579708,system,Echo: Access Control Policy
+2025-04-30T12:08:37.258494,user,THe
+2025-04-30T12:08:38.261915,system,Echo: THe
+2025-04-30T16:24:29.967588,user,access control
+2025-04-30T16:24:29.976265,system,"Question: Are preventive, detective corrective compensating controls in place to mitigate impacts of unauthorized or inappropriate access? | Answer: Yes | Details: We have role-based access control and abide by ""need-to-know"" guidelines. When new employees are added or when existing employees change roles, the employee's role determines which systems they are granted access to and at what access level. Access privileges are reviewed at least yearly and when an employee changes roles or status. Only select and authorized members of the engineering team have access to the production environment where customer data is located. | Category: Access Control"
