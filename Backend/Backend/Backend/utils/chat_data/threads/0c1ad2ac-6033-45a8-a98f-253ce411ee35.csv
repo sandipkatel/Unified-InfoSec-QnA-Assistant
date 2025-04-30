@@ -1,0 +1,3 @@
+timestamp,role,content
+2025-04-30T20:52:38.561281,user,talk about system policy?
+2025-04-30T20:52:38.561281,system,"{'query': 'talk about system policy?', 'context': 'Question: * System backup policy and procedures | Answer: nan | Details: Contained in SOC 2 report | Category: Backup Policy and Procedures', 'text': ""[We don't have enough information to discuss a system policy. However, our system backup policy is contained in our SOC 2 report.]""}"

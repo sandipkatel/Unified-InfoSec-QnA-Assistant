@@ -127,7 +127,39 @@ export default function UnifiedQnAAssistant() {
             }
           }
           console.log("ans", typeof answer);
-          answer = JSON.parse(answer.replace(/'/g, '"'));
+          const parseAnswerData = (answerStr) => {
+            try {
+              // First attempt: Try direct JSON parsing
+              return JSON.parse(answerStr);
+            } catch (e) {
+              try {
+                // Second attempt: Try replacing single quotes with double quotes
+                // This is still not perfect but handles simple cases
+                return JSON.parse(answerStr.replace(/'/g, '"'));
+              } catch (e2) {
+                try {
+                  // Third attempt: Use a regex to extract text content
+                  // This assumes the answer has a structure with a 'text' field
+                  const textMatch = answerStr.match(
+                    /text['"]\s*:\s*['"]([^'"]*)['"]/
+                  );
+                  if (textMatch && textMatch[1]) {
+                    return { text: textMatch[1] };
+                  }
+                } catch (e3) {
+                  // If all parsing attempts fail
+                  console.error("Failed to parse answer:", answerStr);
+                  return { text: "Could not parse answer correctly" };
+                }
+              }
+            }
+          };
+
+          // Use this function where you're currently doing the JSON.parse
+          // Inside your processQuestionnaire function, replace:
+          // answer = JSON.parse(answer.replace(/'/g, '"'));
+          // with:
+          answer = parseAnswerData(answer);
           // console.log(parsed.text);
 
           // answer['text']
@@ -147,7 +179,17 @@ export default function UnifiedQnAAssistant() {
 
         // Count the confidence levels
         questions.forEach((question) => {
-          if (question.confidence in confidenceCounts) {
+          const numConfidence = parseFloat(question.confidence_score);
+          if (!isNaN(numConfidence)) {
+            if (numConfidence >= 80) {
+              confidenceCounts.high++;
+            } else if (numConfidence >= 50) {
+              confidenceCounts.medium++;
+            } else {
+              confidenceCounts.low++;
+            }
+          } else if (question.confidence in confidenceCounts) {
+            // Legacy string-based confidence
             confidenceCounts[question.confidence]++;
           }
         });
@@ -204,59 +246,59 @@ export default function UnifiedQnAAssistant() {
   //   setInputMessage("");
   //   setIsProcessing(true);
 
-    // Send request to backend API
-    // fetch("http://localhost:8080/analyze/", {
-    //   method: "POST",
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //   },
-    //   body: JSON.stringify({ message: inputMessage }),
-    // })
-    //   .then((response) => {
-    //     if (!response.ok) {
-    //       throw new Error("Network response was not ok");
-    //     }
-    //     return response.json();
-    //   })
-    //   .then((data) => {
-    //     // Extract Answer and Details from the content
-    //     let answer = "";
-    //     let details = "";
-    //     console.log("cont", data.content.text);
-    //     // if (data.content) {
-    //     //   // Extract Answer
-    //     //   const answerMatch = data.content.match(/Answer:\s*(.*?)(?:\s*\||$)/);
-    //     //   if (answerMatch && answerMatch[1]) {
-    //     //     answer = answerMatch[1].trim();
-    //     //   }
+  // Send request to backend API
+  // fetch("http://localhost:8080/analyze/", {
+  //   method: "POST",
+  //   headers: {
+  //     "Content-Type": "application/json",
+  //   },
+  //   body: JSON.stringify({ message: inputMessage }),
+  // })
+  //   .then((response) => {
+  //     if (!response.ok) {
+  //       throw new Error("Network response was not ok");
+  //     }
+  //     return response.json();
+  //   })
+  //   .then((data) => {
+  //     // Extract Answer and Details from the content
+  //     let answer = "";
+  //     let details = "";
+  //     console.log("cont", data.content.text);
+  //     // if (data.content) {
+  //     //   // Extract Answer
+  //     //   const answerMatch = data.content.match(/Answer:\s*(.*?)(?:\s*\||$)/);
+  //     //   if (answerMatch && answerMatch[1]) {
+  //     //     answer = answerMatch[1].trim();
+  //     //   }
 
-    //     //   // Extract Details
-    //     //   const detailsMatch = data.content.match(
-    //     //     /Details:\s*(.*?)(?:\s*\||$)/
-    //     //   );
-    //     //   if (detailsMatch && detailsMatch[1]) {
-    //     //     details = detailsMatch[1].trim();
-    //     //   }
-    //     // }
+  //     //   // Extract Details
+  //     //   const detailsMatch = data.content.match(
+  //     //     /Details:\s*(.*?)(?:\s*\||$)/
+  //     //   );
+  //     //   if (detailsMatch && detailsMatch[1]) {
+  //     //     details = detailsMatch[1].trim();
+  //     //   }
+  //     // }
 
-    //     // // Format the display content with just the values (no labels)
-    //     // let formattedContent = "";
-    //     // if (answer) {
-    //     //   formattedContent += answer;
-    //     // }
-    //     // if (details) {
-    //     //   formattedContent += formattedContent ? `\n\n${details}` : details;
-    //     // }
+  //     // // Format the display content with just the values (no labels)
+  //     // let formattedContent = "";
+  //     // if (answer) {
+  //     //   formattedContent += answer;
+  //     // }
+  //     // if (details) {
+  //     //   formattedContent += formattedContent ? `\n\n${details}` : details;
+  //     // }
 
-    //     // // If nothing was extracted, use a fallback
-    //     // if (!formattedContent) {
-    //     //   formattedContent = "No answer available";
-    //     // }
+  //     // // If nothing was extracted, use a fallback
+  //     // if (!formattedContent) {
+  //     //   formattedContent = "No answer available";
+  //     // }
 
-    //     const response = {
-    //       type: "assistant",
-    //       content: data.content.text,
-    //     };
+  //     const response = {
+  //       type: "assistant",
+  //       content: data.content.text,
+  //     };
 
   //       setChatMessages((prev) => [...prev, response]);
   //     })
@@ -275,17 +317,17 @@ export default function UnifiedQnAAssistant() {
   //     });
   // };
 
-//   // Handle key press in chat input
-//   const handleKeyPress = (e) => {
-//     if (e.key === "Enter" && !e.shiftKey) {
-//       e.preventDefault();
-//       submitMessage();
-//     }
-//   };
+  //   // Handle key press in chat input
+  //   const handleKeyPress = (e) => {
+  //     if (e.key === "Enter" && !e.shiftKey) {
+  //       e.preventDefault();
+  //       submitMessage();
+  //     }
+  //   };
 
-// const handleFeedback = (idx) => {
-//     setChatFeedbackList((idx) => {});
-// }
+  // const handleFeedback = (idx) => {
+  //     setChatFeedbackList((idx) => {});
+  // }
 
   // Reset the file and results
   const resetBatchProcess = () => {
@@ -295,6 +337,19 @@ export default function UnifiedQnAAssistant() {
 
   // Get confidence label color
   const getConfidenceColor = (confidence) => {
+    // Handle numerical confidence (assuming 0-100 scale)
+    const numConfidence = parseFloat(confidence);
+    if (!isNaN(numConfidence)) {
+      if (numConfidence >= 80) {
+        return "bg-green-100 text-green-800";
+      } else if (numConfidence >= 50) {
+        return "bg-yellow-100 text-yellow-800";
+      } else {
+        return "bg-red-100 text-red-800";
+      }
+    }
+
+    // Fallback for legacy string values if needed
     switch (confidence) {
       case "high":
         return "bg-green-100 text-green-800";
@@ -326,6 +381,16 @@ export default function UnifiedQnAAssistant() {
   const filteredQuestions = results
     ? results.questions.filter((q) => {
         if (confidenceFilter === "all") return true;
+
+        const numConfidence = parseFloat(q.confidence);
+        if (!isNaN(numConfidence)) {
+          if (confidenceFilter === "high") return numConfidence >= 80;
+          if (confidenceFilter === "medium")
+            return numConfidence >= 50 && numConfidence < 80;
+          if (confidenceFilter === "low") return numConfidence < 50;
+        }
+
+        // Fallback for legacy string values
         return q.confidence === confidenceFilter;
       })
     : [];
@@ -848,11 +913,18 @@ export default function UnifiedQnAAssistant() {
                           <td className="px-6 py-4">
                             <span
                               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getConfidenceColor(
-                                item.confidence
+                                item.confidence_score
                               )}`}
                             >
-                              {item.confidence.charAt(0).toUpperCase() +
-                                item.confidence.slice(1)}
+                              {typeof item.confidence_score === "number" ||
+                              !isNaN(parseFloat(item.confidence_score))
+                                ? `${parseFloat(item.confidence_score).toFixed(
+                                    1
+                                  )}%`
+                                : item.confidence_score
+                                    .charAt(0)
+                                    .toUpperCase() +
+                                  item.confidence_score.slice(1)}
                             </span>
                           </td>
                           <td className="px-6 py-4 text-sm font-medium">
@@ -903,7 +975,7 @@ export default function UnifiedQnAAssistant() {
             )}
           </div>
         ) : (
-                <ChatHistory />
+          <ChatHistory />
         )}
       </div>
 
