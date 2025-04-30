@@ -1,108 +1,222 @@
-// "use client";
-// import { useState } from "react";
-// import { MoreVertical, Edit, Trash } from "lucide-react";
-
-// export default function PolicyButtonsWithMenu() {
-//   const [topics, setTopics] = useState([
-//     "Access Control",
-//     "Encryption",
-//     "Data Retention",
-//     "Incident Response",
-//   ]);
-  
-//   const [openMenuId, setOpenMenuId] = useState(null);
-  
-//   const handleDelete = (index) => {
-//     setTopics(topics.filter((_, i) => i !== index));
-//     setOpenMenuId(null);
-//   };
-  
-//   const handleRename = (index) => {
-//     const newName = prompt("Enter new name:", topics[index]);
-//     if (newName && newName.trim()) {
-//       const newTopics = [...topics];
-//       newTopics[index] = newName.trim();
-//       setTopics(newTopics);
-//     }
-//     setOpenMenuId(null);
-//   };
-  
-//   return (
-//     <div className="space-y-2">
-//       {topics.map((topic, index) => (
-//         <div key={index} className="relative flex items-center">
-//           <button
-//             className="w-full text-left px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm text-gray-700 transition flex items-center justify-between"
-//           >
-//             <span>{topic}</span>
-//             <div 
-//               className="cursor-pointer p-1 rounded-full hover:bg-gray-200"
-//               onClick={(e) => {
-//                 e.stopPropagation();
-//                 setOpenMenuId(openMenuId === index ? null : index);
-//               }}
-//             >
-//               <MoreVertical size={16} />
-//             </div>
-//           </button>
-          
-//           {openMenuId === index && (
-//             <div className="absolute right-0 top-full mt-1 bg-white shadow-lg rounded-md py-1 z-10 border border-gray-200">
-//               <button 
-//                 className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-//                 onClick={() => handleRename(index)}
-//               >
-//                 <Edit size={14} className="mr-2" />
-//                 Rename
-//               </button>
-//               <button 
-//                 className="flex items-center px-3 py-2 text-sm text-red-600 hover:bg-gray-100 w-full text-left"
-//                 onClick={() => handleDelete(index)}
-//               >
-//                 <Trash size={14} className="mr-2" />
-//                 Delete
-//               </button>
-//             </div>
-//           )}
-//         </div>
-//       ))}
-//     </div>
-//   );
-// }
+"use client";
 import { useState, useRef, useEffect } from "react";
-import { MoreVertical, Edit, Trash, Check, X } from "lucide-react";
+import {
+  MoreVertical,
+  Edit,
+  Trash,
+  Check,
+  PlusCircle,
+  MessageSquarePlus,
+  Send,
+  Mic,
+  ThumbsUp,
+  ThumbsDown,
+} from "lucide-react";
 
-export default function PolicyButtonsWithMenu() {
+export default function ChatHistory() {
+  const [chatMessages, setChatMessages] = useState([
+    {
+      type: "system",
+      content:
+        "Hello! I'm your InfoSec QnA Assistant. How can I help you with security or compliance questions today?",
+    },
+  ]);
+  const [inputMessage, setInputMessage] = useState("");
   const [topics, setTopics] = useState([
     "Access Control",
     "Encryption",
     "Data Retention",
-    "Incident Response",
   ]);
-  
+
   const [openMenuId, setOpenMenuId] = useState(null);
   const [editingIndex, setEditingIndex] = useState(null);
   const [editValue, setEditValue] = useState("");
   const inputRef = useRef(null);
-  
+  const [recording, setRecording] = useState(false);
+
+  const [isHovered, setIsHovered] = useState(false);
+  const [isPulsing, setIsPulsing] = useState(true);
+
+  const [activeTopic, setActiveTopic] = useState(null);
+
+  useEffect(() => {
+    processHistory("list");
+  }, []);
+
   // Focus input when editing starts
   useEffect(() => {
     if (editingIndex !== null && inputRef.current) {
       inputRef.current.focus();
     }
   }, [editingIndex]);
-  
+
+  useEffect(() => {
+    processHistory("select " + activeTopic);
+  }, [activeTopic]);
+
+  // Pulsing animation when component mounts
+  useEffect(() => {
+    const pulseTimer = setTimeout(() => {
+      setIsPulsing(false);
+    }, 2000);
+
+    return () => clearTimeout(pulseTimer);
+  }, []);
+
+  const processHistory = (historyCase) => {
+    console.log("Processing history case:", historyCase);
+    fetch("http://localhost:8080/history/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ history: historyCase }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("Response from server:", data);
+        if (historyCase === "list") {
+          setTopics(data);
+        } else if (historyCase.startsWith("select ")) {
+          setChatMessages(data);
+        } else if (historyCase === "new") {
+          setActiveTopic(data);
+          setChatMessages([
+            {
+              type: "system",
+              content:
+                "Hello! I'm your InfoSec QnA Assistant. How can I help you with security or compliance questions today?",
+            },
+          ]);
+        } else if (historyCase === "delete") {
+          // Handle delete case if needed
+        } else if (historyCase === "edit") {
+          // Handle edit case if needed
+        }
+      });
+  };
+
+  // Submit chat message
+  const submitMessage = () => {
+    if (!inputMessage.trim()) return;
+
+    // Add user message
+    const newMessages = [
+      ...chatMessages,
+      { type: "user", content: inputMessage },
+    ];
+    setChatMessages(newMessages);
+    setInputMessage("");
+    // setIsProcessing(true);
+
+    // Send request to backend API
+    fetch("http://localhost:8080/analyze/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message: inputMessage, activeTopic: activeTopic }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        // Extract Answer and Details from the content
+        let answer = "";
+        let details = "";
+
+        if (data.content) {
+          // Extract Answer
+          const answerMatch = data.content.match(/Answer:\s*(.*?)(?:\s*\||$)/);
+          if (answerMatch && answerMatch[1]) {
+            answer = answerMatch[1].trim();
+          }
+
+          // Extract Details
+          const detailsMatch = data.content.match(
+            /Details:\s*(.*?)(?:\s*\||$)/
+          );
+          if (detailsMatch && detailsMatch[1]) {
+            details = detailsMatch[1].trim();
+          }
+        }
+
+        // Format the display content with just the values (no labels)
+        let formattedContent = "";
+        if (answer) {
+          formattedContent += answer;
+        }
+        if (details) {
+          formattedContent += formattedContent ? `\n\n${details}` : details;
+        }
+
+        // If nothing was extracted, use a fallback
+        if (!formattedContent) {
+          formattedContent = "No answer available";
+        }
+
+        const response = {
+          type: "assistant",
+          content: formattedContent,
+        };
+
+        setChatMessages((prev) => [...prev, response]);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        // Show an error message to the user
+        const errorResponse = {
+          type: "assistant",
+          content:
+            "Sorry, I encountered an error while processing your question. Please try again later.",
+        };
+        setChatMessages((prev) => [...prev, errorResponse]);
+      });
+  };
+
+  const [chatFeedback, setChatFeedback] = useState(null);
+
+  // Handle key press in chat input
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      submitMessage();
+    }
+  };
+
+  // const handleFeedback = (idx) => {
+  //     setChatFeedbackList((idx) => {});
+  // }
+  // Simulate voice recording
+  const toggleRecording = () => {
+    if (recording) {
+      setRecording(false);
+    } else {
+      setRecording(true);
+      let recognization = new webkitSpeechRecognition();
+      recognization.onresult = (e) => {
+        var transcript = e.results[0][0].transcript;
+        setInputMessage(transcript);
+        setRecording(false);
+      };
+      recognization.start();
+    }
+  };
+
   const handleDelete = (index) => {
     setTopics(topics.filter((_, i) => i !== index));
     setOpenMenuId(null);
   };
-  
+
   const startEditing = (index) => {
     setEditingIndex(index);
     setEditValue(topics[index]);
     setOpenMenuId(null);
   };
-  
+
   const saveEdit = () => {
     if (editValue.trim()) {
       const newTopics = [...topics];
@@ -111,17 +225,17 @@ export default function PolicyButtonsWithMenu() {
     }
     cancelEdit();
   };
-  
+
   const cancelEdit = () => {
     setEditingIndex(null);
     setEditValue("");
   };
-  
+
   const handleMenuToggle = (e, index) => {
     e.stopPropagation();
     setOpenMenuId(openMenuId === index ? null : index);
   };
-  
+
   // Close menu when clicking outside
   const handleClickOutside = () => {
     if (openMenuId !== null) {
@@ -137,73 +251,268 @@ export default function PolicyButtonsWithMenu() {
       cancelEdit();
     }
   };
-  
+
   return (
-    <div className="space-y-2" onClick={handleClickOutside}>
-      {topics.map((topic, index) => (
-        <div key={index} className="relative flex items-center">
-          {editingIndex === index ? (
-            // Editing mode
-            <div className="w-full flex items-center bg-white border border-blue-300 rounded-lg px-2 py-1">
-              <input
-                ref={inputRef}
-                type="text"
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="flex-grow px-1 py-1 text-sm text-gray-600 outline-none"
-              />
-              <div className="flex space-x-1">
-                <button 
-                  onClick={saveEdit} 
-                  className="p-1 text-green-600 hover:bg-gray-100 rounded-full"
-                >
-                  <Check size={16} />
-                </button>
-              </div>
-            </div>
-          ) : (
-            // Normal mode
-            <button
-              className="w-full text-left px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm text-gray-700 transition flex items-center justify-between"
-            >
-              <span>{topic}</span>
-              <div 
-                className="cursor-pointer p-1 rounded-full hover:bg-gray-200"
-                onClick={(e) => handleMenuToggle(e, index)}
-              >
-                <MoreVertical size={16} />
-              </div>
-            </button>
-          )}
-          
-          {/* Menu dropdown */}
-          {openMenuId === index && (
-            <div className="absolute right-0 top-full mt-1 bg-white shadow-lg rounded-md py-1 z-10 border border-gray-200">
-              <button 
-                className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  startEditing(index);
-                }}
-              >
-                <Edit size={14} className="mr-2" />
-                Rename
-              </button>
-              <button 
-                className="flex items-center px-3 py-2 text-sm text-red-600 hover:bg-gray-100 w-full text-left"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete(index);
-                }}
-              >
-                <Trash size={14} className="mr-2" />
-                Delete
-              </button>
-            </div>
-          )}
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-6xl mx-auto">
+      {/* Knowledge Base Sidebar */}
+      <div className="bg-white rounded-lg shadow-xl p-5 order-2 md:order-1 md:col-span-1">
+        {/* New chat button */}
+        <button
+          onClick={() => processHistory("new")}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          className={`
+          relative flex items-center gap-2 px-15 py-3 mb-5 
+          rounded-full font-medium transition-all duration-300
+          shadow-lg transform hover:scale-105 active:scale-95
+          ${
+            isHovered
+              ? "bg-indigo-600 text-white"
+              : "bg-gradient-to-r from-indigo-500 to-purple-600 text-white"
+          }
+          ${isPulsing ? "animate-pulse" : ""}
+        `}
+        >
+          <div
+            className={`
+          absolute left-3 mr-8 transition-all duration-300 ease-in-out
+          ${isHovered ? "opacity-100 scale-100" : "opacity-0 scale-0"}
+        `}
+          >
+            <MessageSquarePlus
+              size={24}
+              className="transition-all duration-300"
+            />
+          </div>
+
+          <span className="text-lg">New Chat</span>
+
+          <div
+            className={`
+          absolute -top-1 -right-1 w-3 h-3 
+          bg-green-400 rounded-full 
+          transition-all duration-500
+          ${isPulsing ? "animate-ping" : "opacity-0"}
+        `}
+          ></div>
+        </button>
+        <h3 className="text-lg font-bold text-gray-800 mb-2">Recent Topics</h3>
+        <div
+          className="mb-4 h-96 w-full overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-4"
+          style={{ height: "250px" }}
+        >
+          {/*Chat History */}
+          <div className="space-y-2" onClick={handleClickOutside}>
+            {topics
+              .slice()
+              .reverse()
+              .map((topic, index) => (
+                <div key={index} className="relative flex items-center">
+                  {editingIndex === index ? (
+                    // Editing mode
+                    <div className="w-full flex items-center bg-white border border-blue-300 rounded-lg px-2 py-1">
+                      <input
+                        ref={inputRef}
+                        type="text"
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        className="flex-grow px-1 py-1 text-sm text-gray-600 outline-none"
+                      />
+                      <div className="flex space-x-1">
+                        <button
+                          onClick={saveEdit}
+                          className="p-1 text-green-600 hover:bg-gray-100 rounded-full"
+                        >
+                          <Check size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    // Normal mode
+                    <button
+                      onClick={() => setActiveTopic(topic.id)}
+                      className={`w-full text-left px-3 py-2 hover:bg-gray-100 rounded-lg text-sm text-gray-700 transition flex items-center justify-between ${
+                        activeTopic === topic.id ? "bg-blue-100" : "bg-gray-50"
+                      }`}
+                    >
+                      <span>{topic.title}</span>
+                      <div
+                        className="cursor-pointer p-1 rounded-full hover:bg-gray-200"
+                        onClick={(e) => handleMenuToggle(e, index)}
+                      >
+                        <MoreVertical size={16} />
+                      </div>
+                    </button>
+                  )}
+
+                  {/* Menu dropdown */}
+                  {openMenuId === index && (
+                    <div className="absolute right-0 top-full mt-1 bg-white shadow-lg rounded-md py-1 z-10 border border-gray-200">
+                      <button
+                        className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          startEditing(index);
+                        }}
+                      >
+                        <Edit size={14} className="mr-2" />
+                        Rename
+                      </button>
+                      <button
+                        className="flex items-center px-3 py-2 text-sm text-red-600 hover:bg-gray-100 w-full text-left"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(index);
+                        }}
+                      >
+                        <Trash size={14} className="mr-2" />
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+          </div>
         </div>
-      ))}
+
+        <div>
+          <h3 className="text-lg font-bold text-gray-800 mb-2">
+            Suggested Resources
+          </h3>
+          <div className="space-y-2">
+            {[
+              "Information Security Policy",
+              "Data Classification Guide",
+              "Encryption Standards",
+            ].map((resource) => (
+              <div
+                key={resource}
+                className="bg-blue-50 p-2 rounded-lg border border-blue-100"
+              >
+                <div className="text-sm font-medium text-blue-700">
+                  {resource}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Chat Interface */}
+      <div className="bg-white rounded-lg shadow-xl flex flex-col h-[600px] overflow-hidden order-1 md:order-2 md:col-span-3">
+        {/* Chat Messages */}
+        <div className="flex-grow p-6 overflow-y-auto">
+          <div className="space-y-4">
+            {chatMessages.map((msg, idx) => (
+              <div
+                key={idx}
+                className={`flex ${
+                  msg.type === "user" ? "justify-end" : "justify-start"
+                }`}
+              >
+                <div
+                  className={`max-w-3/4 rounded-lg p-4 ${
+                    msg.type === "user"
+                      ? "bg-blue-600 text-white"
+                      : msg.type === "system"
+                      ? "bg-gray-100 text-gray-800 border border-gray-200"
+                      : "bg-indigo-50 text-gray-800 border border-indigo-100"
+                  }`}
+                >
+                  <div className="text-sm">{msg.content}</div>
+
+                  {/* References for assistant messages */}
+                  {msg.type === "assistant" &&
+                    msg.references &&
+                    msg.references.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-indigo-200">
+                        <div className="text-xs font-medium text-indigo-700 mb-1">
+                          References:
+                        </div>
+                        <div className="text-xs text-indigo-600">
+                          {msg.references.join(" • ")}
+                        </div>
+                      </div>
+                    )}
+
+                  {/* Feedback buttons for assistant messages */}
+                  {msg.type === "assistant" && (
+                    <div className="mt-2 flex justify-end text-gray-500">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => setChatFeedback("thumbs-up")}
+                          className={
+                            chatFeedback === "thumbs-up"
+                              ? "p-1 text-green-700"
+                              : "p-1 hover:text-green-400 transition"
+                          }
+                        >
+                          <ThumbsUp className="h-3 w-3" />
+                        </button>
+                        <button
+                          onClick={() => setChatFeedback("thumbs-down")}
+                          className={
+                            chatFeedback === "thumbs-down"
+                              ? "p-1 text-red-700"
+                              : "p-1 hover:text-red-400 transition"
+                          }
+                        >
+                          <ThumbsDown className="h-3 w-3" />
+                        </button>
+                        <input
+                          type="checkbox"
+                          checked={chatFeedback === "flag-review"}
+                          onChange={() => setChatFeedback("flag-review")}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Input Area */}
+        <div className="border-t border-gray-200 bg-gray-50 p-4">
+          <div className="flex space-x-2">
+            <input
+              type="text"
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Ask about security policies, compliance requirements, etc."
+              className="flex-grow rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white border-gray-300 text-gray-700"
+            />
+
+            {/* Voice Input Button */}
+            <button
+              onClick={toggleRecording}
+              className={`rounded-lg p-2 ${
+                recording
+                  ? "bg-red-600 text-white"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+              } transition relative`}
+            >
+              <Mic className="h-5 w-5" />
+              {recording && (
+                <span className="flex h-3 w-3 absolute -top-1 -right-1">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={submitMessage}
+              className="rounded-lg p-2 bg-blue-500 text-white hover:bg-blue-600 transition"
+            >
+              <Send className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

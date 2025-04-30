@@ -33,31 +33,31 @@ export default function UnifiedQnAAssistant() {
   const [dragActive, setDragActive] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [results, setResults] = useState(null);
-  const [chatMessages, setChatMessages] = useState([
-    {
-      type: "system",
-      content:
-        "Hello! I'm your InfoSec QnA Assistant. How can I help you with security or compliance questions today?",
-    },
-  ]);
-  const [inputMessage, setInputMessage] = useState("");
+  // const [chatMessages, setChatMessages] = useState([
+  //   {
+  //     type: "system",
+  //     content:
+  //       "Hello! I'm your InfoSec QnA Assistant. How can I help you with security or compliance questions today?",
+  //   },
+  // ]);
+  // const [inputMessage, setInputMessage] = useState("");
   const [showDetails, setShowDetails] = useState({});
   const [darkMode, setDarkMode] = useState(false);
   const [confidenceFilter, setConfidenceFilter] = useState("all");
   const [selectedQuestions, setSelectedQuestions] = useState([]);
   const [notification, setNotification] = useState(null);
-  const [recording, setRecording] = useState(false);
-  const [quickFilters] = useState([
-    "Access Control",
-    "Encryption",
-    "Data Privacy",
-    "Incident Response",
-    "Network Security",
-    "Compliance",
-  ]);
+  // const [recording, setRecording] = useState(false);
+  // const [quickFilters] = useState([
+  //   "Access Control",
+  //   "Encryption",
+  //   "Data Privacy",
+  //   "Incident Response",
+  //   "Network Security",
+  //   "Compliance",
+  // ]);
 
-  const [chatFeedback, setChatFeedback] = useState(null);
-  const [chatFeedbackList, setChatFeedbackList] = useState([]);
+  // const [chatFeedback, setChatFeedback] = useState(null);
+  // const [chatFeedbackList, setChatFeedbackList] = useState([]);
 
   // Handle drag events
   const handleDrag = (e) => {
@@ -177,101 +177,101 @@ export default function UnifiedQnAAssistant() {
     }));
   };
 
-  // Submit chat message
-  const submitMessage = () => {
-    if (!inputMessage.trim()) return;
+  // // Submit chat message
+  // const submitMessage = () => {
+  //   if (!inputMessage.trim()) return;
 
-    // Add user message
-    const newMessages = [
-      ...chatMessages,
-      { type: "user", content: inputMessage },
-    ];
-    setChatMessages(newMessages);
-    setInputMessage("");
-    setIsProcessing(true);
+  //   // Add user message
+  //   const newMessages = [
+  //     ...chatMessages,
+  //     { type: "user", content: inputMessage },
+  //   ];
+  //   setChatMessages(newMessages);
+  //   setInputMessage("");
+  //   setIsProcessing(true);
 
-    // Send request to backend API
-    fetch("http://localhost:8080/analyze/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ message: inputMessage }),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Network response was not ok");
-        }
-        return response.json();
-      })
-      .then((data) => {
-        // Extract Answer and Details from the content
-        let answer = "";
-        let details = "";
+  //   // Send request to backend API
+  //   fetch("http://localhost:8080/analyze/", {
+  //     method: "POST",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //     },
+  //     body: JSON.stringify({ message: inputMessage }),
+  //   })
+  //     .then((response) => {
+  //       if (!response.ok) {
+  //         throw new Error("Network response was not ok");
+  //       }
+  //       return response.json();
+  //     })
+  //     .then((data) => {
+  //       // Extract Answer and Details from the content
+  //       let answer = "";
+  //       let details = "";
 
-        if (data.content) {
-          // Extract Answer
-          const answerMatch = data.content.match(/Answer:\s*(.*?)(?:\s*\||$)/);
-          if (answerMatch && answerMatch[1]) {
-            answer = answerMatch[1].trim();
-          }
+  //       if (data.content) {
+  //         // Extract Answer
+  //         const answerMatch = data.content.match(/Answer:\s*(.*?)(?:\s*\||$)/);
+  //         if (answerMatch && answerMatch[1]) {
+  //           answer = answerMatch[1].trim();
+  //         }
 
-          // Extract Details
-          const detailsMatch = data.content.match(
-            /Details:\s*(.*?)(?:\s*\||$)/
-          );
-          if (detailsMatch && detailsMatch[1]) {
-            details = detailsMatch[1].trim();
-          }
-        }
+  //         // Extract Details
+  //         const detailsMatch = data.content.match(
+  //           /Details:\s*(.*?)(?:\s*\||$)/
+  //         );
+  //         if (detailsMatch && detailsMatch[1]) {
+  //           details = detailsMatch[1].trim();
+  //         }
+  //       }
 
-        // Format the display content with just the values (no labels)
-        let formattedContent = "";
-        if (answer) {
-          formattedContent += answer;
-        }
-        if (details) {
-          formattedContent += formattedContent ? `\n\n${details}` : details;
-        }
+  //       // Format the display content with just the values (no labels)
+  //       let formattedContent = "";
+  //       if (answer) {
+  //         formattedContent += answer;
+  //       }
+  //       if (details) {
+  //         formattedContent += formattedContent ? `\n\n${details}` : details;
+  //       }
 
-        // If nothing was extracted, use a fallback
-        if (!formattedContent) {
-          formattedContent = "No answer available";
-        }
+  //       // If nothing was extracted, use a fallback
+  //       if (!formattedContent) {
+  //         formattedContent = "No answer available";
+  //       }
 
-        const response = {
-          type: "assistant",
-          content: formattedContent,
-        };
+  //       const response = {
+  //         type: "assistant",
+  //         content: formattedContent,
+  //       };
 
-        setChatMessages((prev) => [...prev, response]);
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        // Show an error message to the user
-        const errorResponse = {
-          type: "assistant",
-          content:
-            "Sorry, I encountered an error while processing your question. Please try again later.",
-        };
-        setChatMessages((prev) => [...prev, errorResponse]);
-      })
-      .finally(() => {
-        setIsProcessing(false);
-      });
-  };
+  //       setChatMessages((prev) => [...prev, response]);
+  //     })
+  //     .catch((error) => {
+  //       console.error("Error:", error);
+  //       // Show an error message to the user
+  //       const errorResponse = {
+  //         type: "assistant",
+  //         content:
+  //           "Sorry, I encountered an error while processing your question. Please try again later.",
+  //       };
+  //       setChatMessages((prev) => [...prev, errorResponse]);
+  //     })
+  //     .finally(() => {
+  //       setIsProcessing(false);
+  //     });
+  // };
 
-  // Handle key press in chat input
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      submitMessage();
-    }
-  };
+//   // Handle key press in chat input
+//   const handleKeyPress = (e) => {
+//     if (e.key === "Enter" && !e.shiftKey) {
+//       e.preventDefault();
+//       submitMessage();
+//     }
+//   };
 
-const handleFeedback = (idx) => {
-    setChatFeedbackList((idx) => {});
-}
+// const handleFeedback = (idx) => {
+//     setChatFeedbackList((idx) => {});
+// }
 
   // Reset the file and results
   const resetBatchProcess = () => {
@@ -326,31 +326,6 @@ const handleFeedback = (idx) => {
       "success"
     );
     setSelectedQuestions([]);
-  };
-
-  // Simulate voice recording
-  const toggleRecording = () => {
-    // if (recording) {
-    //   setRecording(false);
-    //   // Simulate voice recognition result
-    //   setTimeout(() => {
-    //     setInputMessage("What are our policies regarding third-party vendors?");
-    //   }, 1000);
-    // } else {
-    //   setRecording(true);
-    // }
-    if (recording) {
-      setRecording(false);
-    } else {
-      setRecording(true);
-      let recognization = new webkitSpeechRecognition();
-      recognization.onresult = (e) => {
-        var transcript = e.results[0][0].transcript;
-        setInputMessage(transcript);
-        setRecording(false);
-      };
-      recognization.start();
-    }
   };
 
   return (
@@ -914,240 +889,7 @@ const handleFeedback = (idx) => {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-6xl mx-auto">
-            {/* Knowledge Base Sidebar */}
-            <div className="bg-white rounded-lg shadow-xl p-5 order-2 md:order-1 md:col-span-1">
-              <div className="mb-4">
-                <h3 className="text-lg font-bold text-gray-800 mb-2">
-                  Recent Topics
-                </h3>
-                {/*Chat History */}
                 <ChatHistory />
-              </div>
-
-              <div>
-                <h3 className="text-lg font-bold text-gray-800 mb-2">
-                  Suggested Resources
-                </h3>
-                <div className="space-y-2">
-                  {[
-                    "Information Security Policy",
-                    "Data Classification Guide",
-                    "Encryption Standards",
-                    "Incident Response Plan",
-                  ].map((resource) => (
-                    <div
-                      key={resource}
-                      className="bg-blue-50 p-3 rounded-lg border border-blue-100"
-                    >
-                      <div className="text-sm font-medium text-blue-700">
-                        {resource}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Chat Interface */}
-            <div className="bg-white rounded-lg shadow-xl flex flex-col h-[600px] overflow-hidden order-1 md:order-2 md:col-span-3">
-              {/* Chat Messages */}
-              <div className="flex-grow p-6 overflow-y-auto">
-                {/* Quick Filters */}
-                <div className="mb-4 flex flex-wrap gap-2">
-                  {quickFilters.map((filter) => (
-                    <button
-                      key={filter}
-                      onClick={() => {
-                        setInputMessage(
-                          `Tell me about our ${filter.toLowerCase()} policies`
-                        );
-                      }}
-                      className={`px-3 py-1 text-xs font-medium rounded-full transition ${
-                        darkMode
-                          ? "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                      }`}
-                    >
-                      {filter}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="space-y-4">
-                  {chatMessages.map((msg, idx) => (
-                    <div
-                      key={idx}
-                      className={`flex ${
-                        msg.type === "user" ? "justify-end" : "justify-start"
-                      }`}
-                    >
-                      <div
-                        className={`max-w-3/4 rounded-lg p-4 ${
-                          msg.type === "user"
-                            ? "bg-blue-600 text-white"
-                            : msg.type === "system"
-                            ? darkMode
-                              ? "bg-gray-800 text-gray-200 border border-gray-700"
-                              : "bg-gray-100 text-gray-800 border border-gray-200"
-                            : darkMode
-                            ? "bg-indigo-900 text-gray-200 border border-indigo-800"
-                            : "bg-indigo-50 text-gray-800 border border-indigo-100"
-                        }`}
-                      >
-                        <div className="text-sm">{msg.content}</div>
-
-                        {/* References for assistant messages */}
-                        {msg.type === "assistant" &&
-                          msg.references &&
-                          msg.references.length > 0 && (
-                            <div
-                              className={`mt-2 pt-2 ${
-                                darkMode
-                                  ? "border-t border-indigo-800"
-                                  : "border-t border-indigo-200"
-                              }`}
-                            >
-                              <div
-                                className={`text-xs font-medium ${
-                                  darkMode
-                                    ? "text-indigo-400"
-                                    : "text-indigo-700"
-                                } mb-1`}
-                              >
-                                References:
-                              </div>
-                              <div
-                                className={`text-xs ${
-                                  darkMode
-                                    ? "text-indigo-400"
-                                    : "text-indigo-600"
-                                }`}
-                              >
-                                {msg.references.join(" • ")}
-                              </div>
-                            </div>
-                          )}
-
-                        {/* Feedback buttons for assistant messages */}
-                        {msg.type === "assistant" && (
-                          <div
-                            className={`mt-2 flex justify-end ${
-                              darkMode ? "text-gray-400" : "text-gray-500"
-                            }`}
-                          >
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() =>
-                                  // showNotification(
-                                  //   "Feedback received. Thank you!",
-                                  //   "success"
-                                  // )
-                                  setChatFeedback("thumbs-up")
-                                }
-                                className={
-                                  chatFeedback === "thumbs-up"
-                                    ? "p-1 text-green-700"
-                                    : "p-1 hover:text-green-400 transition"
-                                }
-                              >
-                                <ThumbsUp className="h-3 w-3" />
-                              </button>
-                              <button
-                                onClick={() => setChatFeedback("thumbs-down")}
-                                className={
-                                  chatFeedback === "thumbs-down"
-                                    ? "p-1 text-red-700"
-                                    : "p-1 hover:text-red-400 transition"
-                                }
-                              >
-                                <ThumbsDown className="h-3 w-3" />
-                              </button>
-                              <input
-                                type="checkbox"
-                                checked={chatFeedback === "flag-review"}
-                                onChange={() => setChatFeedback("flag-review")}
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Input Area */}
-              <div
-                className={`border-t ${
-                  darkMode
-                    ? "border-gray-700 bg-gray-800"
-                    : "border-gray-200 bg-gray-50"
-                } p-4`}
-              >
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Ask about security policies, compliance requirements, etc."
-                    className={`flex-grow rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      darkMode
-                        ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                        : "bg-white border-gray-300 text-gray-700"
-                    }`}
-                  />
-
-                  {/* Voice Input Button */}
-                  <button
-                    onClick={toggleRecording}
-                    className={`rounded-lg p-2 ${
-                      recording
-                        ? "bg-red-600 text-white"
-                        : darkMode
-                        ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                    } transition relative`}
-                  >
-                    <Mic className="h-5 w-5" />
-                    {recording && (
-                      <span className="flex h-3 w-3 absolute -top-1 -right-1">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                      </span>
-                    )}
-                  </button>
-
-                  {/* History Button */}
-                  {/* <button
-                    className={`rounded-lg p-2 ${
-                      darkMode
-                        ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                    } transition`}
-                    onClick={() =>
-                      showNotification("Chat history opened", "info")
-                    }
-                  >
-                    <History className="h-5 w-5" />
-                  </button> */}
-
-                  {/* Send Button */}
-                  <button
-                    onClick={submitMessage}
-                    className={`rounded-lg p-2 ${
-                      darkMode
-                        ? "bg-blue-600 text-white hover:bg-blue-700"
-                        : "bg-blue-500 text-white hover:bg-blue-600"
-                    } transition`}
-                  >
-                    <Send className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
         )}
       </div>
 
