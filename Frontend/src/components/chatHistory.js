@@ -115,7 +115,7 @@ export default function ChatHistory() {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ message: inputMessage, activeTopic: activeTopic }),
+      body: JSON.stringify({ message: inputMessage }),
     })
       .then((response) => {
         if (!response.ok) {
@@ -127,40 +127,40 @@ export default function ChatHistory() {
         // Extract Answer and Details from the content
         let answer = "";
         let details = "";
+        console.log("cont", data.content.text);
+        // if (data.content) {
+        //   // Extract Answer
+        //   const answerMatch = data.content.match(/Answer:\s*(.*?)(?:\s*\||$)/);
+        //   if (answerMatch && answerMatch[1]) {
+        //     answer = answerMatch[1].trim();
+        //   }
 
-        if (data.content) {
-          // Extract Answer
-          const answerMatch = data.content.match(/Answer:\s*(.*?)(?:\s*\||$)/);
-          if (answerMatch && answerMatch[1]) {
-            answer = answerMatch[1].trim();
-          }
+        //   // Extract Details
+        //   const detailsMatch = data.content.match(
+        //     /Details:\s*(.*?)(?:\s*\||$)/
+        //   );
+        //   if (detailsMatch && detailsMatch[1]) {
+        //     details = detailsMatch[1].trim();
+        //   }
+        // }
 
-          // Extract Details
-          const detailsMatch = data.content.match(
-            /Details:\s*(.*?)(?:\s*\||$)/
-          );
-          if (detailsMatch && detailsMatch[1]) {
-            details = detailsMatch[1].trim();
-          }
-        }
+        // // Format the display content with just the values (no labels)
+        // let formattedContent = "";
+        // if (answer) {
+        //   formattedContent += answer;
+        // }
+        // if (details) {
+        //   formattedContent += formattedContent ? `\n\n${details}` : details;
+        // }
 
-        // Format the display content with just the values (no labels)
-        let formattedContent = "";
-        if (answer) {
-          formattedContent += answer;
-        }
-        if (details) {
-          formattedContent += formattedContent ? `\n\n${details}` : details;
-        }
-
-        // If nothing was extracted, use a fallback
-        if (!formattedContent) {
-          formattedContent = "No answer available";
-        }
+        // // If nothing was extracted, use a fallback
+        // if (!formattedContent) {
+        //   formattedContent = "No answer available";
+        // }
 
         const response = {
           type: "assistant",
-          content: formattedContent,
+          content: data.content.text,
         };
 
         setChatMessages((prev) => [...prev, response]);

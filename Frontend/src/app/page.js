@@ -93,81 +93,79 @@ export default function UnifiedQnAAssistant() {
   };
 
   // Process questionnaire
-  const processQuestionnaire = () => {
-    setTimeout(() => {
-      // Mock results
-      setResults({
-        totalQuestions: 15,
-        answeredQuestions: 15,
-        confidence: {
-          high: 9,
-          medium: 4,
-          low: 2,
-        },
-        questions: [
-          {
-            id: "Q1",
-            question:
-              "Does your organization have a documented information security policy?",
-            suggestedAnswer:
-              "Yes, our organization maintains a comprehensive Information Security Policy that is reviewed annually and approved by executive leadership.",
-            confidence: "high",
-            // confidence: "high(90%)",
-            references: [
-              "InfoSec Policy v3.2, Section 1.1",
-              "ISO 27001 Certification Document",
-            ],
-          },
-          {
-            id: "Q2",
-            question:
-              "How often does your organization perform penetration testing?",
-            suggestedAnswer:
-              "Our organization conducts penetration testing on a quarterly basis, with results reviewed by the security team and remediation plans implemented within 30 days.",
-            confidence: "high",
-            // confidence: "high(92%)",
-            references: [
-              "Security Testing Procedure, Section 4.2",
-              "Last Penetration Test Report (March 2025)",
-            ],
-          },
-          {
-            id: "Q3",
-            question: "Describe your organization's incident response plan.",
-            suggestedAnswer:
-              "Our incident response plan follows NIST guidelines with defined roles, communication procedures, and containment strategies. The plan is tested bi-annually through tabletop exercises.",
-            confidence: "medium",
-            // confidence: "medium(70%)",
-            references: ["Incident Response Plan v2.1", "IR Exercise Reports"],
-          },
-          {
-            id: "Q4",
-            question: "What encryption standards are used for data at rest?",
-            suggestedAnswer:
-              "We implement AES-256 encryption for all data at rest, with keys managed through a dedicated key management system with rotation policies.",
-            confidence: "low",
-            // confidence: "low(33%)",
-            references: ["Encryption Policy, Section 3.4"],
-          },
-        ],
-      });
-      setIsProcessing(false);
-    }, 2000);
-    // setIsProcessing(true);
+  const processQuestionnaire = async () => {
+    if (!selectedFile) {
+      console.error("No file selected");
+      return;
+    }
 
-    // fetch("http://localhost:8080/analyze/", {
-    //   method: "POST",
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //   },
-    //   body: JSON.stringify({}), // Add real input if needed
-    // })
-    //   .then((res) => res.json())
-    //   .then((data) => {
-    //     setResults(data);
-    //     setIsProcessing(false);
-    //   });
+    setIsProcessing(true); // Show processing indicator
+
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      const response = await fetch("http://localhost:8080/batch/", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("File uploaded successfully:", data);
+
+      // Process the response data
+      if (data && data.results) {
+        const questions = data.results;
+
+        // Calculate confidence metrics
+        const confidenceCounts = {
+          high: 0,
+          medium: 0,
+          low: 0,
+        };
+
+        // Count the confidence levels
+        questions.forEach((question) => {
+          if (question.confidence in confidenceCounts) {
+            confidenceCounts[question.confidence]++;
+          }
+        });
+
+        // Set the results with the appropriate format
+        setResults({
+          totalQuestions: questions.length,
+          answeredQuestions: questions.length, // Assuming all questions were answered
+          confidence: confidenceCounts,
+          questions: questions,
+        });
+      } else {
+        throw new Error("Invalid response format from server");
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      // Show error message to user
+      setError(`Failed to process questionnaire: ${error.message}`);
+    } finally {
+      setIsProcessing(false); // Hide processing indicator
+    }
   };
+  // setIsProcessing(true);
+
+  // fetch("http://localhost:8080/analyze/", {
+  //   method: "POST",
+  //   headers: {
+  //     "Content-Type": "application/json",
+  //   },
+  //   body: JSON.stringify({}), // Add real input if needed
+  // })
+  //   .then((res) => res.json())
+  //   .then((data) => {
+  //     setResults(data);
+  //     setIsProcessing(false);
 
   // Toggle details for a specific question
   const toggleDetails = (id) => {
@@ -190,59 +188,59 @@ export default function UnifiedQnAAssistant() {
   //   setInputMessage("");
   //   setIsProcessing(true);
 
-  //   // Send request to backend API
-  //   fetch("http://localhost:8080/analyze/", {
-  //     method: "POST",
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //     },
-  //     body: JSON.stringify({ message: inputMessage }),
-  //   })
-  //     .then((response) => {
-  //       if (!response.ok) {
-  //         throw new Error("Network response was not ok");
-  //       }
-  //       return response.json();
-  //     })
-  //     .then((data) => {
-  //       // Extract Answer and Details from the content
-  //       let answer = "";
-  //       let details = "";
+    // Send request to backend API
+    // fetch("http://localhost:8080/analyze/", {
+    //   method: "POST",
+    //   headers: {
+    //     "Content-Type": "application/json",
+    //   },
+    //   body: JSON.stringify({ message: inputMessage }),
+    // })
+    //   .then((response) => {
+    //     if (!response.ok) {
+    //       throw new Error("Network response was not ok");
+    //     }
+    //     return response.json();
+    //   })
+    //   .then((data) => {
+    //     // Extract Answer and Details from the content
+    //     let answer = "";
+    //     let details = "";
+    //     console.log("cont", data.content.text);
+    //     // if (data.content) {
+    //     //   // Extract Answer
+    //     //   const answerMatch = data.content.match(/Answer:\s*(.*?)(?:\s*\||$)/);
+    //     //   if (answerMatch && answerMatch[1]) {
+    //     //     answer = answerMatch[1].trim();
+    //     //   }
 
-  //       if (data.content) {
-  //         // Extract Answer
-  //         const answerMatch = data.content.match(/Answer:\s*(.*?)(?:\s*\||$)/);
-  //         if (answerMatch && answerMatch[1]) {
-  //           answer = answerMatch[1].trim();
-  //         }
+    //     //   // Extract Details
+    //     //   const detailsMatch = data.content.match(
+    //     //     /Details:\s*(.*?)(?:\s*\||$)/
+    //     //   );
+    //     //   if (detailsMatch && detailsMatch[1]) {
+    //     //     details = detailsMatch[1].trim();
+    //     //   }
+    //     // }
 
-  //         // Extract Details
-  //         const detailsMatch = data.content.match(
-  //           /Details:\s*(.*?)(?:\s*\||$)/
-  //         );
-  //         if (detailsMatch && detailsMatch[1]) {
-  //           details = detailsMatch[1].trim();
-  //         }
-  //       }
+    //     // // Format the display content with just the values (no labels)
+    //     // let formattedContent = "";
+    //     // if (answer) {
+    //     //   formattedContent += answer;
+    //     // }
+    //     // if (details) {
+    //     //   formattedContent += formattedContent ? `\n\n${details}` : details;
+    //     // }
 
-  //       // Format the display content with just the values (no labels)
-  //       let formattedContent = "";
-  //       if (answer) {
-  //         formattedContent += answer;
-  //       }
-  //       if (details) {
-  //         formattedContent += formattedContent ? `\n\n${details}` : details;
-  //       }
+    //     // // If nothing was extracted, use a fallback
+    //     // if (!formattedContent) {
+    //     //   formattedContent = "No answer available";
+    //     // }
 
-  //       // If nothing was extracted, use a fallback
-  //       if (!formattedContent) {
-  //         formattedContent = "No answer available";
-  //       }
-
-  //       const response = {
-  //         type: "assistant",
-  //         content: formattedContent,
-  //       };
+    //     const response = {
+    //       type: "assistant",
+    //       content: data.content.text,
+    //     };
 
   //       setChatMessages((prev) => [...prev, response]);
   //     })
