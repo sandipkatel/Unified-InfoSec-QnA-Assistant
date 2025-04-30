@@ -98,28 +98,45 @@ export default function UnifiedQnAAssistant() {
       console.error("No file selected");
       return;
     }
-
     setIsProcessing(true); // Show processing indicator
-
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
-
       const response = await fetch("http://localhost:8080/batch/", {
         method: "POST",
         body: formData,
       });
-
       if (!response.ok) {
         throw new Error(`Error: ${response.status}`);
       }
-
       const data = await response.json();
       console.log("File uploaded successfully:", data);
 
       // Process the response data
       if (data && data.results) {
-        const questions = data.results;
+        const questions = data.results.map((question) => {
+          // Extract just the text from suggestedAnswer if it's an object
+          let answer = question.suggestedAnswer;
+          if (typeof answer === "object" && answer !== null) {
+            // If it has a text property, use that
+            if (answer.text) {
+              answer = answer.text;
+            } else {
+              // Otherwise, convert to string to avoid rendering errors
+              answer = JSON.stringify(answer);
+            }
+          }
+          console.log("ans", typeof answer);
+          answer = JSON.parse(answer.replace(/'/g, '"'));
+          // console.log(parsed.text);
+
+          // answer['text']
+          // Return the processed question with the extracted answer
+          return {
+            ...question,
+            suggestedAnswer: answer.text,
+          };
+        });
 
         // Calculate confidence metrics
         const confidenceCounts = {
@@ -134,7 +151,6 @@ export default function UnifiedQnAAssistant() {
             confidenceCounts[question.confidence]++;
           }
         });
-
         // Set the results with the appropriate format
         setResults({
           totalQuestions: questions.length,
