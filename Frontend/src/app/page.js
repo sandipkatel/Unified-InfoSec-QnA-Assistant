@@ -188,59 +188,59 @@ export default function UnifiedQnAAssistant() {
   //   setInputMessage("");
   //   setIsProcessing(true);
 
-    // Send request to backend API
-    // fetch("http://localhost:8080/analyze/", {
-    //   method: "POST",
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //   },
-    //   body: JSON.stringify({ message: inputMessage }),
-    // })
-    //   .then((response) => {
-    //     if (!response.ok) {
-    //       throw new Error("Network response was not ok");
-    //     }
-    //     return response.json();
-    //   })
-    //   .then((data) => {
-    //     // Extract Answer and Details from the content
-    //     let answer = "";
-    //     let details = "";
-    //     console.log("cont", data.content.text);
-    //     // if (data.content) {
-    //     //   // Extract Answer
-    //     //   const answerMatch = data.content.match(/Answer:\s*(.*?)(?:\s*\||$)/);
-    //     //   if (answerMatch && answerMatch[1]) {
-    //     //     answer = answerMatch[1].trim();
-    //     //   }
+  // Send request to backend API
+  // fetch("http://localhost:8080/analyze/", {
+  //   method: "POST",
+  //   headers: {
+  //     "Content-Type": "application/json",
+  //   },
+  //   body: JSON.stringify({ message: inputMessage }),
+  // })
+  //   .then((response) => {
+  //     if (!response.ok) {
+  //       throw new Error("Network response was not ok");
+  //     }
+  //     return response.json();
+  //   })
+  //   .then((data) => {
+  //     // Extract Answer and Details from the content
+  //     let answer = "";
+  //     let details = "";
+  //     console.log("cont", data.content.text);
+  //     // if (data.content) {
+  //     //   // Extract Answer
+  //     //   const answerMatch = data.content.match(/Answer:\s*(.*?)(?:\s*\||$)/);
+  //     //   if (answerMatch && answerMatch[1]) {
+  //     //     answer = answerMatch[1].trim();
+  //     //   }
 
-    //     //   // Extract Details
-    //     //   const detailsMatch = data.content.match(
-    //     //     /Details:\s*(.*?)(?:\s*\||$)/
-    //     //   );
-    //     //   if (detailsMatch && detailsMatch[1]) {
-    //     //     details = detailsMatch[1].trim();
-    //     //   }
-    //     // }
+  //     //   // Extract Details
+  //     //   const detailsMatch = data.content.match(
+  //     //     /Details:\s*(.*?)(?:\s*\||$)/
+  //     //   );
+  //     //   if (detailsMatch && detailsMatch[1]) {
+  //     //     details = detailsMatch[1].trim();
+  //     //   }
+  //     // }
 
-    //     // // Format the display content with just the values (no labels)
-    //     // let formattedContent = "";
-    //     // if (answer) {
-    //     //   formattedContent += answer;
-    //     // }
-    //     // if (details) {
-    //     //   formattedContent += formattedContent ? `\n\n${details}` : details;
-    //     // }
+  //     // // Format the display content with just the values (no labels)
+  //     // let formattedContent = "";
+  //     // if (answer) {
+  //     //   formattedContent += answer;
+  //     // }
+  //     // if (details) {
+  //     //   formattedContent += formattedContent ? `\n\n${details}` : details;
+  //     // }
 
-    //     // // If nothing was extracted, use a fallback
-    //     // if (!formattedContent) {
-    //     //   formattedContent = "No answer available";
-    //     // }
+  //     // // If nothing was extracted, use a fallback
+  //     // if (!formattedContent) {
+  //     //   formattedContent = "No answer available";
+  //     // }
 
-    //     const response = {
-    //       type: "assistant",
-    //       content: data.content.text,
-    //     };
+  //     const response = {
+  //       type: "assistant",
+  //       content: data.content.text,
+  //     };
 
   //       setChatMessages((prev) => [...prev, response]);
   //     })
@@ -259,17 +259,17 @@ export default function UnifiedQnAAssistant() {
   //     });
   // };
 
-//   // Handle key press in chat input
-//   const handleKeyPress = (e) => {
-//     if (e.key === "Enter" && !e.shiftKey) {
-//       e.preventDefault();
-//       submitMessage();
-//     }
-//   };
+  //   // Handle key press in chat input
+  //   const handleKeyPress = (e) => {
+  //     if (e.key === "Enter" && !e.shiftKey) {
+  //       e.preventDefault();
+  //       submitMessage();
+  //     }
+  //   };
 
-// const handleFeedback = (idx) => {
-//     setChatFeedbackList((idx) => {});
-// }
+  // const handleFeedback = (idx) => {
+  //     setChatFeedbackList((idx) => {});
+  // }
 
   // Reset the file and results
   const resetBatchProcess = () => {
@@ -462,7 +462,7 @@ export default function UnifiedQnAAssistant() {
                 </h3>
                 <p className="text-gray-500 mb-6 max-w-md mx-auto">
                   Drag and drop your questionnaire file here, or click to
-                  browse. We support Excel, CSV, and PDF formats.
+                  browse. We CSV file formats.
                 </p>
                 <input
                   type="file"
@@ -887,7 +887,7 @@ export default function UnifiedQnAAssistant() {
             )}
           </div>
         ) : (
-                <ChatHistory />
+          <ChatHistory />
         )}
       </div>
 
