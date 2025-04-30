@@ -3,3 +3,7 @@ Temp/*
 
 # Igonre model
 **/Model/*
+
+# Docs
+*.docx
+*.doc
