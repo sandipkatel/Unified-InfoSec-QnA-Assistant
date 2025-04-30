@@ -25,6 +25,8 @@ import {
   CheckSquare,
 } from "lucide-react";
 
+import ChatHistory from "@/components/chatHistory";
+
 export default function UnifiedQnAAssistant() {
   const [activeTab, setActiveTab] = useState("batch");
   const [selectedFile, setSelectedFile] = useState(null);
@@ -53,7 +55,9 @@ export default function UnifiedQnAAssistant() {
     "Network Security",
     "Compliance",
   ]);
+
   const [chatFeedback, setChatFeedback] = useState(null);
+  const [chatFeedbackList, setChatFeedbackList] = useState([]);
 
   // Handle drag events
   const handleDrag = (e) => {
@@ -228,6 +232,10 @@ export default function UnifiedQnAAssistant() {
       submitMessage();
     }
   };
+
+const handleFeedback = (idx) => {
+    setChatFeedbackList((idx) => {});
+}
 
   // Reset the file and results
   const resetBatchProcess = () => {
@@ -834,12 +842,12 @@ export default function UnifiedQnAAssistant() {
                                   <ChevronRight className="h-5 w-5" />
                                 )}
                               </button>
-                              <button className="text-green-600 hover:text-green-800 transition">
+                              {/* <button className="text-green-600 hover:text-green-800 transition">
                                 Accept
                               </button>
                               <button className="text-red-600 hover:text-red-800 transition">
                                 Edit
-                              </button>
+                              </button> */}
                             </div>
                           </td>
                         </tr>
@@ -877,21 +885,8 @@ export default function UnifiedQnAAssistant() {
                 <h3 className="text-lg font-bold text-gray-800 mb-2">
                   Recent Topics
                 </h3>
-                <div className="space-y-2">
-                  {[
-                    "Access Control",
-                    "Encryption",
-                    "Data Retention",
-                    "Incident Response",
-                  ].map((topic) => (
-                    <button
-                      key={topic}
-                      className="w-full text-left px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm text-gray-700 transition"
-                    >
-                      {topic}
-                    </button>
-                  ))}
-                </div>
+                {/*Chat History */}
+                <ChatHistory />
               </div>
 
               <div>
@@ -1089,7 +1084,7 @@ export default function UnifiedQnAAssistant() {
                   </button>
 
                   {/* History Button */}
-                  <button
+                  {/* <button
                     className={`rounded-lg p-2 ${
                       darkMode
                         ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -1100,7 +1095,7 @@ export default function UnifiedQnAAssistant() {
                     }
                   >
                     <History className="h-5 w-5" />
-                  </button>
+                  </button> */}
 
                   {/* Send Button */}
                   <button
@@ -1123,7 +1118,7 @@ export default function UnifiedQnAAssistant() {
       {/* Footer */}
       <footer className="bg-gray-800 text-gray-300 py-4">
         <div className="container mx-auto px-4 text-center text-sm">
-          <p>Unified InfoSec QnA Assistant v1.0 • InfoSec Team</p>
+          <p>Unified InfoSec QnA Assistant v1.0 • Team Brahma</p>
         </div>
       </footer>
     </div>
