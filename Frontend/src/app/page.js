@@ -188,41 +188,77 @@ export default function UnifiedQnAAssistant() {
     ];
     setChatMessages(newMessages);
     setInputMessage("");
+    setIsProcessing(true);
 
-    // Simulate assistant response (would connect to backend in real implementation)
-    setTimeout(() => {
-      let response;
-      if (inputMessage.toLowerCase().includes("encryption")) {
-        response = {
-          type: "assistant",
-          content:
-            "Our organization implements AES-256 encryption for data at rest and TLS 1.3 for data in transit. All encryption implementations follow NIST guidelines.",
-          references: [
-            "Encryption Policy v3.1, Section 2.4",
-            "Security Standards Document, Page 17",
-          ],
-        };
-      } else if (inputMessage.toLowerCase().includes("access control")) {
-        response = {
-          type: "assistant",
-          content:
-            "We follow the principle of least privilege for access control. All access requires multi-factor authentication and is reviewed quarterly.",
-          references: [
-            "Access Control Policy, Section 5.2",
-            "Identity Management Procedures",
-          ],
-        };
-      } else {
-        response = {
-          type: "assistant",
-          content:
-            "Based on our knowledge base, I don't have enough information to provide a specific answer to that question. Would you like me to forward this to our security team for a detailed response?",
-          references: [],
-        };
-      }
+    // Send request to backend API
+    fetch("http://localhost:8080/analyze/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message: inputMessage }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        // Extract Answer and Details from the content
+        let answer = "";
+        let details = "";
 
-      setChatMessages((prev) => [...prev, response]);
-    }, 1000);
+        if (data.content) {
+          // Extract Answer
+          const answerMatch = data.content.match(/Answer:\s*(.*?)(?:\s*\||$)/);
+          if (answerMatch && answerMatch[1]) {
+            answer = answerMatch[1].trim();
+          }
+
+          // Extract Details
+          const detailsMatch = data.content.match(
+            /Details:\s*(.*?)(?:\s*\||$)/
+          );
+          if (detailsMatch && detailsMatch[1]) {
+            details = detailsMatch[1].trim();
+          }
+        }
+
+        // Format the display content with just the values (no labels)
+        let formattedContent = "";
+        if (answer) {
+          formattedContent += answer;
+        }
+        if (details) {
+          formattedContent += formattedContent ? `\n\n${details}` : details;
+        }
+
+        // If nothing was extracted, use a fallback
+        if (!formattedContent) {
+          formattedContent = "No answer available";
+        }
+
+        const response = {
+          type: "assistant",
+          content: formattedContent,
+        };
+
+        setChatMessages((prev) => [...prev, response]);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        // Show an error message to the user
+        const errorResponse = {
+          type: "assistant",
+          content:
+            "Sorry, I encountered an error while processing your question. Please try again later.",
+        };
+        setChatMessages((prev) => [...prev, errorResponse]);
+      })
+      .finally(() => {
+        setIsProcessing(false);
+      });
   };
 
   // Handle key press in chat input

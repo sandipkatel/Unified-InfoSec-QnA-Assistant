@@ -1,57 +1,56 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from time import sleep
-from utils.speech_to_text import speech_to_text
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import FAISS
 
-# @api_view(['POST'])
-def analyze_questionnaire(request):
-    # Simulate processing delay
-    sleep(2)
-    print("yeta aayo")
-    # Mocked response
-    results = {
-        "totalQuestions": 15,
-        "answeredQuestions": 15,
-        "confidence": {
-            "high": 9,
-            "medium": 4,
-            "low": 2,
-        },
-        "questions": [
-            {
-                "id": "Q1",
-                "question": "Does your organization have a documented information security policy?",
-                "suggestedAnswer": "Yes, our organization maintains a comprehensive Information Security Policy that is reviewed annually and approved by executive leadership.",
-                "confidence": "high",
-                "references": [
-                    "InfoSec Policy v3.2, Section 1.1",
-                    "ISO 27001 Certification Document"
-                ]
-            },
-            {
-                "id": "Q2",
-                "question": "How often does your organization perform penetration testing?",
-                "suggestedAnswer": "Our organization conducts penetration testing on a quarterly basis, with results reviewed by the security team and remediation plans implemented within 30 days.",
-                "confidence": "high",
-                "references": [
-                    "Security Testing Procedure, Section 4.2",
-                    "Last Penetration Test Report (March 2025)"
-                ]
-            },
-            {
-                "id": "Q3",
-                "question": "Describe your organization's incident response plan.",
-                "suggestedAnswer": "Our incident response plan follows NIST guidelines with defined roles, communication procedures, and containment strategies. The plan is tested bi-annually through tabletop exercises.",
-                "confidence": "medium",
-                "references": ["Incident Response Plan v2.1", "IR Exercise Reports"]
-            },
-            {
-                "id": "Q4",
-                "question": "What encryption standards are used for data at rest?",
-                "suggestedAnswer": "We implement AES-256 encryption for all data at rest, with keys managed through a dedicated key management system with rotation policies.",
-                "confidence": "low",
-                "references": ["Encryption Policy, Section 3.4"]
-            }
-        ]
-    }
-    return Response(results)
+@api_view(['POST'])
+def analyze_question(request):
+    try:
+        # Get query from request
+        query = request.data.get('message', '')
+        if not query:
+            return Response({"error": "No message provided"}, status=400)
+            
+        # Load embedding model and vector store
+        embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+        csv_vectorstore = FAISS.load_local("../faiss_csv_index", embedding_model, allow_dangerous_deserialization=True)
+        
+        # Perform similarity search
+        results = csv_vectorstore.similarity_search(query, k=3)
+        for i, doc in enumerate(results, 1):
+            print(f"\n--- Result {i} ---")
+            print(doc.page_content)
+        # Process results
+        references = []
+        content_matches = []
+        
+        for doc in results:
+            # Add document content to matches
+            content_matches.append(doc.page_content)
+            
+            # Check if there's a source or metadata to use as reference
+            if hasattr(doc, 'metadata') and doc.metadata:
+                if 'source' in doc.metadata:
+                    references.append(doc.metadata['source'])
+        
+        # Determine response content based on search results
+        if content_matches:
+            # Use the first result as the main response content
+            response_content = content_matches[0]
+        else:
+            response_content = "Based on our knowledge base, I don't have enough information to provide a specific answer to that question. Would you like me to forward this to our security team for a detailed response?"
+        
+        # Return processed results
+        results = {
+            "type": "assistant",
+            "content": response_content,
+            "references": references,
+            "all_matches": content_matches
+        }
+        
+        return Response(results)
+        
+    except Exception as e:
+        print(f"Error in analyze_question: {str(e)}")
+        return Response({"error": str(e)}, status=500)
