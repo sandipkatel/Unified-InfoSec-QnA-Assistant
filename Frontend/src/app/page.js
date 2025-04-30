@@ -462,7 +462,7 @@ export default function UnifiedQnAAssistant() {
                 </h3>
                 <p className="text-gray-500 mb-6 max-w-md mx-auto">
                   Drag and drop your questionnaire file here, or click to
-                  browse. We CSV file formats.
+                  browse. We support CSV file formats.
                 </p>
                 <input
                   type="file"
