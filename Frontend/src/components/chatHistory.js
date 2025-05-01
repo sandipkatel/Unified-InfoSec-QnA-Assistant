@@ -11,6 +11,10 @@ import {
   Mic,
   ThumbsUp,
   ThumbsDown,
+  AlertCircle,
+  Shield,
+  ShieldCheck,
+  ShieldAlert,
 } from "lucide-react";
 
 export default function ChatHistory() {
@@ -96,6 +100,72 @@ export default function ChatHistory() {
       });
   };
 
+  // Get confidence label color
+  const getConfidenceColor = (confidence) => {
+    if (!confidence) return "bg-gray-100 text-gray-800";
+
+    if (typeof confidence === "string") {
+      switch (confidence.toLowerCase()) {
+        case "high":
+          return "bg-green-100 text-green-800";
+        case "medium":
+          return "bg-yellow-100 text-yellow-800";
+        case "low":
+          return "bg-red-100 text-red-800";
+        default:
+          return "bg-gray-100 text-gray-800";
+      }
+    } else {
+      // Handle numeric confidence scores
+      if (confidence >= 0.7) {
+        return "bg-green-100 text-green-800";
+      } else if (confidence >= 0.4) {
+        return "bg-yellow-100 text-yellow-800";
+      } else {
+        return "bg-red-100 text-red-800";
+      }
+    }
+  };
+
+  // Get confidence icon based on score
+  const getConfidenceIcon = (confidence) => {
+    if (!confidence) return <AlertCircle className="h-4 w-4" />;
+
+    if (typeof confidence === "string") {
+      switch (confidence.toLowerCase()) {
+        case "high":
+          return <ShieldCheck className="h-4 w-4" />;
+        case "medium":
+          return <Shield className="h-4 w-4" />;
+        case "low":
+          return <ShieldAlert className="h-4 w-4" />;
+        default:
+          return <AlertCircle className="h-4 w-4" />;
+      }
+    } else {
+      // Handle numeric confidence scores
+      if (confidence >= 0.8) {
+        return <ShieldCheck className="h-4 w-4" />;
+      } else if (confidence >= 0.5) {
+        return <Shield className="h-4 w-4" />;
+      } else {
+        return <ShieldAlert className="h-4 w-4" />;
+      }
+    }
+  };
+
+  // Format confidence value for display
+  const formatConfidence = (confidence) => {
+    if (!confidence) return "Unknown";
+
+    if (typeof confidence === "string") {
+      return confidence.charAt(0).toUpperCase() + confidence.slice(1);
+    } else {
+      // Format numeric confidence as percentage
+      return Math.round(confidence * 100) + "%";
+    }
+  };
+
   // Submit chat message
   const submitMessage = () => {
     if (!inputMessage.trim()) return;
@@ -107,7 +177,6 @@ export default function ChatHistory() {
     ];
     setChatMessages(newMessages);
     setInputMessage("");
-    // setIsProcessing(true);
 
     // Send request to backend API
     fetch("http://localhost:8080/analyze/", {
@@ -124,43 +193,15 @@ export default function ChatHistory() {
         return response.json();
       })
       .then((data) => {
-        // Extract Answer and Details from the content
-        let answer = "";
-        let details = "";
-        console.log("cont", data.content.text);
-        // if (data.content) {
-        //   // Extract Answer
-        //   const answerMatch = data.content.match(/Answer:\s*(.*?)(?:\s*\||$)/);
-        //   if (answerMatch && answerMatch[1]) {
-        //     answer = answerMatch[1].trim();
-        //   }
+        console.log("Response data:", data);
 
-        //   // Extract Details
-        //   const detailsMatch = data.content.match(
-        //     /Details:\s*(.*?)(?:\s*\||$)/
-        //   );
-        //   if (detailsMatch && detailsMatch[1]) {
-        //     details = detailsMatch[1].trim();
-        //   }
-        // }
-
-        // // Format the display content with just the values (no labels)
-        // let formattedContent = "";
-        // if (answer) {
-        //   formattedContent += answer;
-        // }
-        // if (details) {
-        //   formattedContent += formattedContent ? `\n\n${details}` : details;
-        // }
-
-        // // If nothing was extracted, use a fallback
-        // if (!formattedContent) {
-        //   formattedContent = "No answer available";
-        // }
-
+        // Create response object with confidence score
         const response = {
           type: "assistant",
           content: data.content.text,
+          references: data.references || [],
+          confidence: data.confidence_score,
+          all_matches: data.all_matches || [],
         };
 
         setChatMessages((prev) => [...prev, response]);
@@ -172,6 +213,7 @@ export default function ChatHistory() {
           type: "assistant",
           content:
             "Sorry, I encountered an error while processing your question. Please try again later.",
+          confidence: "low",
         };
         setChatMessages((prev) => [...prev, errorResponse]);
       });
@@ -187,9 +229,6 @@ export default function ChatHistory() {
     }
   };
 
-  // const handleFeedback = (idx) => {
-  //     setChatFeedbackList((idx) => {});
-  // }
   // Simulate voice recording
   const toggleRecording = () => {
     if (recording) {
@@ -436,14 +475,28 @@ export default function ChatHistory() {
                       </div>
                     )}
 
-                  {/* Feedback buttons for assistant messages */}
-                  {msg.type === "assistant" && (
-                    <div className="mt-2 flex justify-end text-gray-500">
-                      <div className="flex space-x-2">
+                  {/* Confidence Score for assistant messages */}
+                  {msg.type === "assistant" && msg.confidence && (
+                    <div className="mt-2 flex items-center justify-between">
+                      <div className="flex items-center">
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getConfidenceColor(
+                            msg.confidence
+                          )}`}
+                        >
+                          <span className="mr-1">
+                            {getConfidenceIcon(msg.confidence)}
+                          </span>
+                          Confidence: {formatConfidence(msg.confidence)}
+                        </span>
+                      </div>
+
+                      {/* Feedback buttons */}
+                      <div className="flex space-x-2 text-gray-500">
                         <button
-                          onClick={() => setChatFeedback("thumbs-up")}
+                          onClick={() => setChatFeedback(idx + "-thumbs-up")}
                           className={
-                            chatFeedback === "thumbs-up"
+                            chatFeedback === idx + "-thumbs-up"
                               ? "p-1 text-green-700"
                               : "p-1 hover:text-green-400 transition"
                           }
@@ -451,20 +504,15 @@ export default function ChatHistory() {
                           <ThumbsUp className="h-3 w-3" />
                         </button>
                         <button
-                          onClick={() => setChatFeedback("thumbs-down")}
+                          onClick={() => setChatFeedback(idx + "-thumbs-down")}
                           className={
-                            chatFeedback === "thumbs-down"
+                            chatFeedback === idx + "-thumbs-down"
                               ? "p-1 text-red-700"
                               : "p-1 hover:text-red-400 transition"
                           }
                         >
                           <ThumbsDown className="h-3 w-3" />
                         </button>
-                        <input
-                          type="checkbox"
-                          checked={chatFeedback === "flag-review"}
-                          onChange={() => setChatFeedback("flag-review")}
-                        />
                       </div>
                     </div>
                   )}

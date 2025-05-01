@@ -98,28 +98,77 @@ export default function UnifiedQnAAssistant() {
       console.error("No file selected");
       return;
     }
-
     setIsProcessing(true); // Show processing indicator
-
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
-
       const response = await fetch("http://localhost:8080/batch/", {
         method: "POST",
         body: formData,
       });
-
       if (!response.ok) {
         throw new Error(`Error: ${response.status}`);
       }
-
       const data = await response.json();
       console.log("File uploaded successfully:", data);
 
       // Process the response data
       if (data && data.results) {
-        const questions = data.results;
+        const questions = data.results.map((question) => {
+          // Extract just the text from suggestedAnswer if it's an object
+          let answer = question.suggestedAnswer;
+          if (typeof answer === "object" && answer !== null) {
+            // If it has a text property, use that
+            if (answer.text) {
+              answer = answer.text;
+            } else {
+              // Otherwise, convert to string to avoid rendering errors
+              answer = JSON.stringify(answer);
+            }
+          }
+          console.log("ans", typeof answer);
+          const parseAnswerData = (answerStr) => {
+            try {
+              // First attempt: Try direct JSON parsing
+              return JSON.parse(answerStr);
+            } catch (e) {
+              try {
+                // Second attempt: Try replacing single quotes with double quotes
+                // This is still not perfect but handles simple cases
+                return JSON.parse(answerStr.replace(/'/g, '"'));
+              } catch (e2) {
+                try {
+                  // Third attempt: Use a regex to extract text content
+                  // This assumes the answer has a structure with a 'text' field
+                  const textMatch = answerStr.match(
+                    /text['"]\s*:\s*['"]([^'"]*)['"]/
+                  );
+                  if (textMatch && textMatch[1]) {
+                    return { text: textMatch[1] };
+                  }
+                } catch (e3) {
+                  // If all parsing attempts fail
+                  console.error("Failed to parse answer:", answerStr);
+                  return { text: "Could not parse answer correctly" };
+                }
+              }
+            }
+          };
+
+          // Use this function where you're currently doing the JSON.parse
+          // Inside your processQuestionnaire function, replace:
+          // answer = JSON.parse(answer.replace(/'/g, '"'));
+          // with:
+          answer = parseAnswerData(answer);
+          // console.log(parsed.text);
+
+          // answer['text']
+          // Return the processed question with the extracted answer
+          return {
+            ...question,
+            suggestedAnswer: answer.text,
+          };
+        });
 
         // Calculate confidence metrics
         const confidenceCounts = {
@@ -130,11 +179,20 @@ export default function UnifiedQnAAssistant() {
 
         // Count the confidence levels
         questions.forEach((question) => {
-          if (question.confidence in confidenceCounts) {
+          const numConfidence = parseFloat(question.confidence_score);
+          if (!isNaN(numConfidence)) {
+            if (numConfidence >= 80) {
+              confidenceCounts.high++;
+            } else if (numConfidence >= 50) {
+              confidenceCounts.medium++;
+            } else {
+              confidenceCounts.low++;
+            }
+          } else if (question.confidence in confidenceCounts) {
+            // Legacy string-based confidence
             confidenceCounts[question.confidence]++;
           }
         });
-
         // Set the results with the appropriate format
         setResults({
           totalQuestions: questions.length,
@@ -279,6 +337,19 @@ export default function UnifiedQnAAssistant() {
 
   // Get confidence label color
   const getConfidenceColor = (confidence) => {
+    // Handle numerical confidence (assuming 0-100 scale)
+    const numConfidence = parseFloat(confidence);
+    if (!isNaN(numConfidence)) {
+      if (numConfidence >= 80) {
+        return "bg-green-100 text-green-800";
+      } else if (numConfidence >= 50) {
+        return "bg-yellow-100 text-yellow-800";
+      } else {
+        return "bg-red-100 text-red-800";
+      }
+    }
+
+    // Fallback for legacy string values if needed
     switch (confidence) {
       case "high":
         return "bg-green-100 text-green-800";
@@ -310,6 +381,16 @@ export default function UnifiedQnAAssistant() {
   const filteredQuestions = results
     ? results.questions.filter((q) => {
         if (confidenceFilter === "all") return true;
+
+        const numConfidence = parseFloat(q.confidence);
+        if (!isNaN(numConfidence)) {
+          if (confidenceFilter === "high") return numConfidence >= 80;
+          if (confidenceFilter === "medium")
+            return numConfidence >= 50 && numConfidence < 80;
+          if (confidenceFilter === "low") return numConfidence < 50;
+        }
+
+        // Fallback for legacy string values
         return q.confidence === confidenceFilter;
       })
     : [];
@@ -832,11 +913,18 @@ export default function UnifiedQnAAssistant() {
                           <td className="px-6 py-4">
                             <span
                               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getConfidenceColor(
-                                item.confidence
+                                item.confidence_score
                               )}`}
                             >
-                              {item.confidence.charAt(0).toUpperCase() +
-                                item.confidence.slice(1)}
+                              {typeof item.confidence_score === "number" ||
+                              !isNaN(parseFloat(item.confidence_score))
+                                ? `${parseFloat(item.confidence_score).toFixed(
+                                    1
+                                  )}%`
+                                : item.confidence_score
+                                    .charAt(0)
+                                    .toUpperCase() +
+                                  item.confidence_score.slice(1)}
                             </span>
                           </td>
                           <td className="px-6 py-4 text-sm font-medium">

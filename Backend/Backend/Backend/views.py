@@ -7,6 +7,7 @@ from langchain.chains import LLMChain
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from .utils.history import ChatThreadManager
+import json
 
 manager = ChatThreadManager()
 
@@ -31,21 +32,55 @@ def analyze_question(request):
         pdf_store = FAISS.load_local("../faiss_pdf_index", embeddings=embedding_model, allow_dangerous_deserialization=True)
 
         def retrieve_hybrid_results(query, top_k=1, threshold=0.6):
-            csv_results = csv_store.similarity_search(query, k=top_k)
-            print(csv_results)
-
-            if csv_results:
-                for doc in csv_results:
+            # For CSV store, get similarity scores along with documents
+            csv_docs_with_scores = csv_store.similarity_search_with_score(query, k=top_k)
+            
+            # Process results and add source
+            csv_results = []
+            csv_score = None
+            if csv_docs_with_scores:
+                for doc, score in csv_docs_with_scores:
                     doc.metadata['source'] = 'csv'
-                return csv_results
-
-            pdf_results = pdf_store.similarity_search(query, k=top_k)
-            for doc in pdf_results:
-                doc.metadata['source'] = 'pdf'
-            return pdf_results
+                    doc.metadata['score'] = score
+                    csv_results.append(doc)
+                    csv_score = score
+            
+            # If we have CSV results with good scores, return them
+            if csv_results:
+                return csv_results, csv_score
+            
+            # For PDF store, get similarity scores with documents
+            pdf_docs_with_scores = pdf_store.similarity_search_with_score(query, k=top_k)
+            pdf_results = []
+            pdf_score = None
+            if pdf_docs_with_scores:
+                for doc, score in pdf_docs_with_scores:
+                    doc.metadata['source'] = 'pdf'
+                    doc.metadata['score'] = score
+                    pdf_results.append(doc)
+                    pdf_score = score
+                    
+            return pdf_results, pdf_score
+        
+        def calculate_confidence(score):
+            if score is None:
+                return 0.0
+                
+            # Convert FAISS distance to confidence score (0-1)
+            # Lower distance means higher similarity in FAISS
+            # Note: FAISS cosine distance ranges from 0 (identical) to 2 (completely different)
+            # Adjusting to a 0-1 confidence scale where 1 is highest confidence
+            confidence = max(0, min(1, 1 - (score / 2)))
+            
+            # Optional: Apply a sigmoid or other function to make the scale more intuitive
+            # For example, boosting mid-range values and pushing extremes further apart
+            # confidence = 1 / (1 + math.exp(-10 * (confidence - 0.5)))
+            
+            return round(confidence, 2)
         
         def answer_query(query):
-            docs = retrieve_hybrid_results(query, top_k=1)
+            docs, score = retrieve_hybrid_results(query, top_k=1)
+            confidence_score = calculate_confidence(score)
             
             # Process results for returning metadata
             references = []
@@ -85,7 +120,7 @@ def analyze_question(request):
                 prompt = ChatPromptTemplate.from_template(custom_prompt)
                 chain = LLMChain(prompt=prompt, llm=llm)
                 response = chain.invoke({"query": query, "context": csv_context})
-                return response, references, content_matches
+                return response, references, content_matches, confidence_score
 
             elif pdf_context:
                 custom_prompt = """
@@ -105,22 +140,24 @@ def analyze_question(request):
                 prompt = ChatPromptTemplate.from_template(custom_prompt)
                 chain = LLMChain(prompt=prompt, llm=llm)
                 response = chain.invoke({"query": query, "context": pdf_context})
-                return response, references, content_matches
+                return response, references, content_matches, confidence_score
             
             # No matches found
-            return {"text": "Based on our knowledge base, I don't have enough information to provide a specific answer to that question. Would you like me to forward this to our security team for a detailed response?"}, references, content_matches
+            return {"text": "Based on our knowledge base, I don't have enough information to provide a specific answer to that question. Would you like me to forward this to our security team for a detailed response?"}, references, content_matches, 0.0
 
         # Get answer and metadata
-        response, references, content_matches = answer_query(query)
-        print("res", response)
+        response, references, content_matches, confidence_score = answer_query(query)
+        
         
         # Return processed results
         results = {
             "type": "system",
             "content": response.text if hasattr(response, 'text') else response,
             "references": references,
-            "all_matches": content_matches
+            "all_matches": content_matches,
+            "confidence_score": confidence_score
         }
+        print("res", results)
         
         if not manager.active_thread:
             thread_id = manager.create_thread(user_id)
@@ -221,6 +258,8 @@ def fetch_history(request):
 
     else:
         return "NoThreadSelected"
+    
+@api_view(['POST'])
 def analyze_questionnaire(request):
     if 'file' not in request.FILES:
         return Response({"error": "No file uploaded"}, status=status.HTTP_400_BAD_REQUEST)
@@ -253,10 +292,128 @@ def analyze_questionnaire(request):
         
         # Load embedding model and vector store
         embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-        csv_vectorstore = FAISS.load_local("../faiss_csv_index/faiss_csv_index", embedding_model, allow_dangerous_deserialization=True)
+        csv_store = FAISS.load_local("../faiss_csv_index/faiss_csv_index", embeddings=embedding_model, allow_dangerous_deserialization=True)
+        pdf_store = FAISS.load_local("../faiss_pdf_index", embeddings=embedding_model, allow_dangerous_deserialization=True)
         
-        # Process each question
+        # Define function for hybrid retrieval - same as in analyze_question
+        def retrieve_hybrid_results(query, top_k=1, threshold=0.6):
+            # For CSV store, get similarity scores along with documents
+            csv_docs_with_scores = csv_store.similarity_search_with_score(query, k=top_k)
+            
+            # Process results and add source
+            csv_results = []
+            csv_score = None
+            if csv_docs_with_scores:
+                for doc, score in csv_docs_with_scores:
+                    doc.metadata['source'] = 'csv'
+                    doc.metadata['score'] = score
+                    csv_results.append(doc)
+                    csv_score = score
+            
+            # If we have CSV results with good scores, return them
+            if csv_results:
+                return csv_results, csv_score
+            
+            # For PDF store, get similarity scores with documents
+            pdf_docs_with_scores = pdf_store.similarity_search_with_score(query, k=top_k)
+            pdf_results = []
+            pdf_score = None
+            if pdf_docs_with_scores:
+                for doc, score in pdf_docs_with_scores:
+                    doc.metadata['source'] = 'pdf'
+                    doc.metadata['score'] = score
+                    pdf_results.append(doc)
+                    pdf_score = score
+                    
+            return pdf_results, pdf_score
+        
+        def calculate_confidence(score):
+            if score is None:
+                return 0.0
+                
+            # Convert FAISS distance to confidence score (0-1)
+            # Lower distance means higher similarity in FAISS
+            # Note: FAISS cosine distance ranges from 0 (identical) to 2 (completely different)
+            # Adjusting to a 0-1 confidence scale where 1 is highest confidence
+            confidence = max(0, min(1, 1 - (score / 2)))
+            
+            return round(confidence, 2)
+        
+        # Define answer_query function - similar to analyze_question
+        def answer_query(query):
+            docs, score = retrieve_hybrid_results(query, top_k=1)
+            confidence_score = calculate_confidence(score)
+            
+            # Process results for returning metadata
+            references = []
+            content_matches = []
+            
+            for doc in docs:
+                # Add document content to matches
+                content_matches.append(doc.page_content)
+                
+                # Check if there's a source or metadata to use as reference
+                if hasattr(doc, 'metadata') and doc.metadata:
+                    if 'source' in doc.metadata:
+                        references.append(doc.metadata['source'])
+
+            # Group by source type
+            csv_context = "\n\n".join([doc.page_content for doc in docs if doc.metadata.get("source") == "csv"])
+            pdf_context = "\n\n".join([doc.page_content for doc in docs if doc.metadata.get("source") == "pdf"])
+
+            llm = ChatOllama(model="llama3.2:latest")
+            
+            if csv_context:
+                custom_prompt = """
+                You are an InfoSec QA assistant. Answer security and compliance questions using only the provided context.
+                For each response:
+                
+                Format the response into a readable paragraph if it is not already in paragraph form.
+                Do not add, remove, or change any words. Preserve the original wording and meaning exactly.
+                
+                Response style:
+                [your formatted response]
+                
+                Context:
+                {context}
+                Question:
+                {query}
+                """
+                prompt = ChatPromptTemplate.from_template(custom_prompt)
+                chain = LLMChain(prompt=prompt, llm=llm)
+                response = chain.invoke({"query": query, "context": csv_context})
+                # Extract just the text value to avoid complex object issues
+                answer_text = response.text if hasattr(response, 'text') else str(response)
+                return answer_text, references, content_matches, confidence_score
+
+            elif pdf_context:
+                custom_prompt = """
+                You are an InfoSec QA assistant. Answer security and compliance questions using only the provided context.
+                For each response:
+
+                Summarize the answer in no more than 50 words.
+                Include the exact source document name at the end in brackets.
+                Response style:
+                [your short refined response]
+
+                Context:
+                {context}
+                Question:
+                {query}
+                """
+                prompt = ChatPromptTemplate.from_template(custom_prompt)
+                chain = LLMChain(prompt=prompt, llm=llm)
+                response = chain.invoke({"query": query, "context": pdf_context})
+                # Extract just the text value to avoid complex object issues
+                answer_text = response.text if hasattr(response, 'text') else str(response)
+                return answer_text, references, content_matches, confidence_score
+            
+            # No matches found
+            return "Based on our knowledge base, I don't have enough information to provide a specific answer to that question. Would you like me to forward this to our security team for a detailed response?", references, content_matches, 0.0
+        
+        # Process each question in the file
         results = []
+        
         for index, row in df.iterrows():
             question = row[question_col]
             
@@ -267,49 +424,26 @@ def analyze_questionnaire(request):
             # Generate a unique question ID (or extract from file if available)
             question_id = f"Q{index+1}" if "id" not in row else row["id"]
             
-            # Perform similarity search
-            vector_results = csv_vectorstore.similarity_search(question, k=1)
+            # Get answer for this question using the same process as analyze_question
+            response_text, references, content_matches, confidence_score = answer_query(question)
             
-            # Process results
-            references = []
-            content_matches = []
-            
-            for doc in vector_results:
-                print(doc.page_content)
-                content_matches.append(doc.page_content)
-                
-                if hasattr(doc, 'metadata') and doc.metadata:
-                    if 'source' in doc.metadata:
-                        references.append(doc.metadata['source'])
-            
-            # Determine response content and confidence
-            if content_matches:
-                suggested_answer = content_matches[0]
-                
-                # Simple confidence scoring based on search result quality
-                # You might want to implement a more sophisticated approach
-                if len(content_matches) >= 3 and len(references) >= 2:
-                    confidence = "high"
-                elif len(content_matches) >= 1:
-                    confidence = "medium"
-                else:
-                    confidence = "low"
-            else:
-                suggested_answer = "Based on our knowledge base, I don't have enough information to provide a specific answer to this question."
-                confidence = "low"
-            
-            # Format the result according to specified structure
+            # Format the result - ensure response is a simple string, not an object
             result = {
                 "id": question_id,
                 "question": question,
-                "suggestedAnswer": suggested_answer,
-                "confidence": confidence,
-                "references": references[:2]  # Limit to 2 references as in example
+                "suggestedAnswer": response_text,  # Already a simple string value
+                "confidence_score": confidence_score*100,  # Numeric confidence score
+                "references": references[:2] if references else [],  # Limit to 2 references
+                "all_matches": content_matches
             }
+            print(result)
             
             results.append(result)
-            print("res", results)
+            
+            # Add a small delay to prevent overwhelming the system
+            sleep(0.1)
         
+        # Return results
         return Response({
             "message": "Questionnaire analyzed successfully",
             "results": results
@@ -317,6 +451,8 @@ def analyze_questionnaire(request):
         
     except Exception as e:
         import traceback
+        print(f"Error processing questionnaire: {str(e)}")
+        print(traceback.format_exc())
         return Response({
             "error": f"Error processing questionnaire: {str(e)}",
             "details": traceback.format_exc()
