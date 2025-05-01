@@ -159,14 +159,15 @@ export default function UnifiedQnAAssistant() {
           // Inside your processQuestionnaire function, replace:
           // answer = JSON.parse(answer.replace(/'/g, '"'));
           // with:
-          answer = parseAnswerData(answer);
+          // answer = parseAnswerData(answer);
           // console.log(parsed.text);
 
           // answer['text']
           // Return the processed question with the extracted answer
+          console.log(answer);
           return {
             ...question,
-            suggestedAnswer: answer.text,
+            suggestedAnswer: answer,
           };
         });
 
@@ -897,7 +898,7 @@ export default function UnifiedQnAAssistant() {
                             {showDetails[item.id] && (
                               <div className="mt-3 bg-gray-50 p-3 rounded border border-gray-200">
                                 <div className="text-xs font-medium text-gray-500 uppercase mb-2">
-                                  References
+                                  Reference
                                 </div>
                                 <ul className="space-y-1 text-sm text-gray-600">
                                   {item.references.map((ref, idx) => (
