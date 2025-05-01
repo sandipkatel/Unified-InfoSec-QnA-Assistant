@@ -203,7 +203,7 @@ export default function ChatHistory() {
           confidence: data.confidence_score,
           all_matches: data.all_matches || [],
         };
-
+        console.log("ref", data.references);
         setChatMessages((prev) => [...prev, response]);
       })
       .catch((error) => {
@@ -470,7 +470,7 @@ export default function ChatHistory() {
                           References:
                         </div>
                         <div className="text-xs text-indigo-600">
-                          {msg.references.join(" • ")}
+                          {msg.references}
                         </div>
                       </div>
                     )}

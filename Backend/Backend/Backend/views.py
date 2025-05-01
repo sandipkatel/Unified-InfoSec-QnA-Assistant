@@ -14,6 +14,7 @@ manager = ChatThreadManager()
 
 # Example user
 user_id = "user123"
+
 from django.http import JsonResponse
 from rest_framework import status
 import pandas as pd
@@ -110,10 +111,12 @@ def analyze_question(request):
                 details = "No details" if details.lower() == "nan" else details
                 category = "No category" if category.lower() == "nan" else category
                 print("ques", question, category)
+                
                 return {
                     "source": "csv",
                     "confidence": calculate_confidence(score),
                     "answer": f"{answer}. {details}",
+                    "category":category
 
                 }
 
@@ -147,7 +150,7 @@ def analyze_question(request):
                 chain = LLMChain(prompt=prompt, llm=llm)
 
                 response = chain.invoke({"query": query, "context": pdf_context})
-
+                
                 return {
                     "source": "pdf",
                     "confidence": calculate_confidence(score),
@@ -163,13 +166,26 @@ def analyze_question(request):
         # Get and return the final answer
         result = answer_query(query)
         print(result)
+        print("ref", result.get("references", []))
         response_data = {
             "type": "system",
             "content": {"text": result.get("answer", "")},
-            "references": result.get("references", []),
+            "references": result.get("category", []),
             "confidence_score": result.get("confidence", 0.0),
             "all_matches": []  # add matches if needed
         }
+
+        if not manager.active_thread:
+            # Create a new thread if no active thread exists
+            thread_id = manager.create_thread(user_id)
+            manager.select_thread(thread_id)
+            # Treat as a message in the current thread
+        user_message = query
+        manager.add_message(user_id, manager.active_thread, "user", user_message)
+        
+        assistant_response = response_data["content"]["text"]
+        manager.add_message(user_id, manager.active_thread, "system", assistant_response)
+        
         return Response(response_data)
 
     except Exception as e:

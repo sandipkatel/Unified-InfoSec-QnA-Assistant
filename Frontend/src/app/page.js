@@ -829,6 +829,7 @@ export default function UnifiedQnAAssistant() {
                         >
                           Confidence
                         </th>
+
                         <th
                           className={`px-6 py-3 text-left text-xs font-medium ${
                             darkMode ? "text-gray-300" : "text-gray-500"
