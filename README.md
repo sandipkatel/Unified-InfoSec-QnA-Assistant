@@ -48,4 +48,4 @@ For system to work properly you myst have installed OLLAMA 3.2 locally
 ---
 
 ## Demo Video
-![Click Here](https://youtu.be/KaE8VwQH2YA)
+[Click Here](https://youtu.be/KaE8VwQH2YA)
