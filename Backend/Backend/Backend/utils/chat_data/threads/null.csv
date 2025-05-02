@@ -22,3 +22,23 @@
 2025-05-01T12:25:38.391329,system,Yes. Server patches are reviewed as they are made available. Then images and containers are rebuilt when necessary
 2025-05-01T12:31:57.042769,user,what is your bcdr?
 2025-05-01T12:31:57.042769,system,No answer. Available on request
+2025-05-01T15:02:23.694392,user,Is only organization-owned equipment permitted to connect from external networks to networks containing scoped systems and data?
+2025-05-01T15:02:23.696390,system,No. Not other than our subcontractors/vendors/sub-processors
+2025-05-02T07:57:42.652797,user,What is our policy on third-party access?
+2025-05-02T07:57:42.656376,system,No answer. No details
+2025-05-02T07:58:00.327969,user,What is your policy on third-party access?
+2025-05-02T07:58:00.336143,system,No answer. No details
+2025-05-02T09:33:57.562233,user,what are your companies privacy policy
+2025-05-02T09:33:57.564560,system,Yes. https://www.Danfe Corp.com/privacy/
+2025-05-02T10:21:35.716477,user,What do you implement for encryption?
+2025-05-02T10:21:35.716477,system,No answer. No details
+2025-05-02T10:37:02.098197,user,how that video arrived here?
+2025-05-02T10:37:02.098197,system,"Yes. Some of our users receive access to a video management portal where they can access their video files, add new ones and share them with an external audience."
+2025-05-02T11:27:56.209749,user,Is data regularly backed up and tested for restoration?
+2025-05-02T11:27:56.215054,system,"Yes. Danfe Corp's data backup strategy includes regular backups stored in geographically redundant locations, with periodic testing of the restoration process using automation tools."
+2025-05-02T11:28:28.166722,user,what is your name
+2025-05-02T11:28:28.172087,system,I cannot provide personal information about you. Is there anything else I can help you with?. 
+2025-05-02T11:28:56.010387,user,what is bcdr
+2025-05-02T11:28:56.015537,system,"[BCDR stands for Business Continuity Disaster Recovery, which refers to strategies and plans designed to ensure alignment with all regulatory and contractual obligations applicable to our industry and operational jurisdictions.]
+
+Our BCP/DR strategies are also designed to demonstrate our commitment to compliance and due diligence.. "

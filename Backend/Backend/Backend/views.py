@@ -31,7 +31,7 @@ def analyze_question(request):
         # Load embedding model and vector stores
         embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
         csv_store = FAISS.load_local(
-            "../faiss_csv_index/faiss_csv_index",
+            "../faiss_csv_index",
             embeddings=embedding_model,
             allow_dangerous_deserialization=True
         )
@@ -41,35 +41,30 @@ def analyze_question(request):
             allow_dangerous_deserialization=True
         )
 
-        def retrieve_hybrid_results(query, top_k=1, threshold=0.6):
-            # Search in CSV store
-            csv_results_raw = csv_store.similarity_search_with_score(query, k=1)
-            csv_results = []
-            csv_score = None
+        def retrieve_hybrid_results(query, top_k=5, threshold=0.2):
+            csv_results = csv_store.similarity_search_with_score(query, k=top_k)
+            filtered_csv = [(doc, score) for doc, score in csv_results if score <= threshold]
 
-            if csv_results_raw:
-                for doc, score in csv_results_raw:
-                    doc.metadata['source'] = 'csv'
-                    doc.metadata['score'] = score
-                    csv_results.append(doc)
-                    csv_score = score
-                return csv_results, csv_score  # Early return if CSV results found
+            if filtered_csv:
+                best_doc, best_score = min(filtered_csv, key=lambda x: x[1])
+                print(f"Best result from CSV with score: {best_score}")
+                print("Answer:", best_doc.metadata.get('answer'))
+                print("Details:", best_doc.metadata.get('details'))
+                print("Category:", best_doc.metadata.get('category'))
+                return [(best_doc, best_score)]
+            else:
+                print("No relevant results found in CSV. Searching in PDF...")
 
-            print("No relevant results found in CSV. Searching in PDF...")
+            pdf_results = pdf_store.similarity_search_with_score(query, k=top_k)
+            filtered_pdf = [(doc, score) for doc, score in pdf_results if score > threshold]
 
-            # Search in PDF store
-            pdf_results_raw = pdf_store.similarity_search_with_score(query, k=top_k)
-            pdf_results = []
-            pdf_score = None
+            if filtered_pdf:
+                best_doc, best_score = min(filtered_pdf, key=lambda x: x[1])
+                best_doc.metadata['source'] = 'pdf'
+                return [(best_doc, best_score)]
 
-            for doc, score in pdf_results_raw:
-                if score >= threshold:
-                    doc.metadata['source'] = 'pdf'
-                    doc.metadata['score'] = score
-                    pdf_results.append(doc)
-                    pdf_score = score
-
-            return pdf_results, pdf_score
+            print("No relevant results found in both CSV and PDF.")
+            return []
 
         def calculate_confidence(score):
             if score is None:
@@ -80,100 +75,82 @@ def analyze_question(request):
             return round(confidence, 2)
 
         def answer_query(query):
-            docs, score = retrieve_hybrid_results(query, top_k=10)
-
-            if not docs:
-                return {
-                    "source": "none",
-                    "answer": "No relevant information found."
-                }
-
-            source = docs[0].metadata.get("source")
-
-            if source == "csv":
-                doc = docs[0]
-                content = doc.page_content
-
-                # Extract fields using regex
-                question_match = re.search(r"Question:\s*(.*?)\s*\|", content)
-                answer_match = re.search(r"Answer:\s*(.*?)\s*\|", content)
-                details_match = re.search(r"Details:\s*(.*?)\s*\|", content)
-                category_match = re.search(r"Category:\s*(.*)", content)
-
-                question = question_match.group(1).strip() if question_match else "No question"
-                answer = answer_match.group(1).strip() if answer_match else "No answer"
-                details = details_match.group(1).strip() if details_match else "No details"
-                category = category_match.group(1).strip() if category_match else "No category"
-
-                # Handle "nan" values
-                question = "No question" if question.lower() == "nan" else question
-                answer = "No answer" if answer.lower() == "nan" else answer
-                details = "No details" if details.lower() == "nan" else details
-                category = "No category" if category.lower() == "nan" else category
-                print("ques", question, category)
+            docs_with_scores = retrieve_hybrid_results(query, top_k=5)
+            
+            if docs_with_scores:
+                doc, score = docs_with_scores[0]
                 
-                return {
-                    "source": "csv",
-                    "confidence": calculate_confidence(score),
-                    "answer": f"{answer}. {details}",
-                    "category":category
+                if 'answer' in doc.metadata or 'details' in doc.metadata or 'category' in doc.metadata:
+                    answer = doc.metadata.get('answer', 'No answer available')
+                    details = doc.metadata.get('details', 'No details available')
+                    category = doc.metadata.get('category', 'No category available')
+                    
+                    answer = "No answer available" if str(answer).lower() == "nan" else answer
+                    details = "No details available" if str(details).lower() == "nan" else details
+                    category = "No category available" if str(category).lower() == "nan" else category
+                    print("csv")
+                    return {
+                        "source": "csv",
+                        "score": float(score),
+                        "answer": answer,
+                        "details": details,
+                        "category": category
+                    }
 
-                }
+                elif doc.metadata.get("source") == "pdf":
+                    pdf_context = "\n\n".join([d.page_content for d, _ in docs_with_scores])
+                    references = set()
+                    
+                    for d, _ in docs_with_scores:
+                        doc_name = d.metadata.get("document_name", "Unknown Document")
+                        page = d.metadata.get("page_number", "N/A")
+                        references.add(f"{doc_name}, Page: {page}")
 
-            elif source == "pdf":
-                # Combine content and references
-                pdf_context = "\n\n".join([doc.page_content for doc in docs])
-                references = set()
+                    custom_prompt = """
+                    You are an InfoSec QA assistant. Answer security and compliance questions using only the provided context.
+                    For each response:
+                    - Ensure that the context is in a readable format if it is not already.
+                    - Do not change, add, or remove any words from the context. Preserve its original meaning exactly.
+                    
+                    Response style:
+                    [your refined response with context preserved]
+                    
+                    Context:
+                    {context}
+                    Question:
+                    {query}
+                    """
+                    
+                    llm = ChatOllama(model="llama3.2:latest")
+                    prompt = ChatPromptTemplate.from_template(custom_prompt)
+                    chain = LLMChain(prompt=prompt, llm=llm)
+                    response = chain.invoke({"query": query, "context": pdf_context})
 
-                for doc in docs:
-                    doc_name = doc.metadata.get("document_name", "Unknown Document")
-                    page = doc.metadata.get("page_number", "N/A")
-                    references.add(f"{doc_name}, Page: {page}")
-
-                custom_prompt = """
-                You are an InfoSec QA assistant. Answer security and compliance questions using only the provided context.
-                For each response:
-                - Ensure that the context is in a readable format if it is not already.
-                - Do not change, add, or remove any words from the context. Preserve its original meaning exactly.
-                
-                Response style:
-                [your refined response with context preserved]
-                
-                Context:
-                {context}
-                Question:
-                {query}
-                """
-
-                llm = ChatOllama(model="llama3.2:latest")
-                prompt = ChatPromptTemplate.from_template(custom_prompt)
-                chain = LLMChain(prompt=prompt, llm=llm)
-
-                response = chain.invoke({"query": query, "context": pdf_context})
-                
-                return {
-                    "source": "pdf",
-                    "confidence": calculate_confidence(score),
-                    "answer": response['text'],
-                    "references": "; ".join(references)
-                }
+                    return {
+                        "source": "pdf",
+                        "score": float(score),
+                        "answer": response['text'],
+                        "references": "; ".join(references)
+                    }
 
             return {
                 "source": "none",
+                "score": None,
                 "answer": "No relevant information found."
             }
 
         # Get and return the final answer
         result = answer_query(query)
-        print(result)
+        print("res", result)
         print("ref", result.get("references", []))
         response_data = {
             "type": "system",
-            "content": {"text": result.get("answer", "")},
+            "content": {"text": result.get("answer", "") + '. ' + result.get("details", '')},
             "references": result.get("category", []),
             "confidence_score": result.get("confidence", 0.0),
             "all_matches": []  # add matches if needed
         }
+        print("response_data", response_data)
 
         if not manager.active_thread:
             # Create a new thread if no active thread exists
@@ -307,45 +284,69 @@ def analyze_questionnaire(request):
         
         # Load embedding model and vector store
         embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-        csv_store = FAISS.load_local(
+        csv_vectorstore = FAISS.load_local(
             "../faiss_csv_index/faiss_csv_index", 
             embeddings=embedding_model, 
             allow_dangerous_deserialization=True
         )
-        pdf_store = FAISS.load_local(
+        pdf_vectorstore = FAISS.load_local(
             "../faiss_pdf_index", 
             embeddings=embedding_model, 
             allow_dangerous_deserialization=True
         )
         
         # Define function for hybrid retrieval - same as in analyze_question
-        def retrieve_hybrid_results(query, top_k=1, threshold=0.6):
-            # Search in CSV store
-            csv_results_raw = csv_store.similarity_search_with_score(query, k=1)
-            csv_results = []
-            csv_score = None
+        # def retrieve_hybrid_results(query, top_k=1, threshold=0.6):
+        #     # Search in CSV store
+        #     csv_results_raw = csv_store.similarity_search_with_score(query, k=1)
+        #     csv_results = []
+        #     csv_score = None
 
-            if csv_results_raw:
-                for doc, score in csv_results_raw:
-                    doc.metadata['source'] = 'csv'
-                    doc.metadata['score'] = score
-                    csv_results.append(doc)
-                    csv_score = score
-                return csv_results, csv_score  # Early return if CSV results found
+        #     if csv_results_raw:
+        #         for doc, score in csv_results_raw:
+        #             doc.metadata['source'] = 'csv'
+        #             doc.metadata['score'] = score
+        #             csv_results.append(doc)
+        #             csv_score = score
+        #         return csv_results, csv_score  # Early return if CSV results found
 
-            # Search in PDF store
-            pdf_results_raw = pdf_store.similarity_search_with_score(query, k=top_k)
-            pdf_results = []
-            pdf_score = None
+        #     # Search in PDF store
+        #     pdf_results_raw = pdf_store.similarity_search_with_score(query, k=top_k)
+        #     pdf_results = []
+        #     pdf_score = None
 
-            for doc, score in pdf_results_raw:
-                if score <= threshold:  # Lower score is better in FAISS
-                    doc.metadata['source'] = 'pdf'
-                    doc.metadata['score'] = score
-                    pdf_results.append(doc)
-                    pdf_score = score
+        #     for doc, score in pdf_results_raw:
+        #         if score <= threshold:  # Lower score is better in FAISS
+        #             doc.metadata['source'] = 'pdf'
+        #             doc.metadata['score'] = score
+        #             pdf_results.append(doc)
+        #             pdf_score = score
 
-            return pdf_results, pdf_score
+        #     return pdf_results, pdf_score
+        def retrieve_hybrid_results(query, top_k=5, threshold=0.2):
+            csv_results = csv_vectorstore.similarity_search_with_score(query, k=top_k)
+            filtered_csv = [(doc, score) for doc, score in csv_results if score <= threshold]
+
+            if filtered_csv:
+                best_doc, best_score = min(filtered_csv, key=lambda x: x[1])
+                print(f"Best result from CSV with score: {best_score}")
+                print("Answer:", best_doc.metadata.get('answer'))
+                print("Details:", best_doc.metadata.get('details'))
+                print("Category:", best_doc.metadata.get('category'))
+                return [(best_doc, best_score)]
+            else:
+                print("No relevant results found in CSV. Searching in PDF...")
+
+            pdf_results = pdf_vectorstore.similarity_search_with_score(query, k=top_k)
+            filtered_pdf = [(doc, score) for doc, score in pdf_results if score > threshold]
+
+            if filtered_pdf:
+                best_doc, best_score = min(filtered_pdf, key=lambda x: x[1])
+                best_doc.metadata['source'] = 'pdf'
+                return [(best_doc, best_score)]
+
+            print("No relevant results found in both CSV and PDF.")
+            return []
         
         def calculate_confidence(score):
             if score is None:

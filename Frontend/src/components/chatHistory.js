@@ -17,7 +17,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 
-export default function ChatHistory() {
+export default function ChatHistory({ darkMode }) {
   const [chatMessages, setChatMessages] = useState([
     {
       type: "system",
@@ -197,7 +197,7 @@ export default function ChatHistory() {
 
         // Create response object with confidence score
         const response = {
-          type: "assistant",
+          type: "system",
           content: data.content.text,
           references: data.references || [],
           confidence: data.confidence_score,
@@ -210,7 +210,7 @@ export default function ChatHistory() {
         console.error("Error:", error);
         // Show an error message to the user
         const errorResponse = {
-          type: "assistant",
+          type: "system",
           content:
             "Sorry, I encountered an error while processing your question. Please try again later.",
           confidence: "low",
@@ -292,9 +292,17 @@ export default function ChatHistory() {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-6xl mx-auto">
+    <div
+      className={`grid grid-cols-1 md:grid-cols-4 gap-1 max-w-6xl mx-auto ${
+        darkMode ? "text-gray-200" : "text-gray-800"
+      }`}
+    >
       {/* Knowledge Base Sidebar */}
-      <div className="bg-white rounded-lg shadow-xl p-5 order-2 md:order-1 md:col-span-1">
+      <div
+        className={`rounded-lg shadow-xl p-5 order-2 md:order-1 md:col-span-1 ${
+          darkMode ? "bg-gray-800" : "bg-gray-50"
+        }`}
+      >
         {/* New chat button */}
         <button
           onClick={() => processHistory("new")}
@@ -335,11 +343,21 @@ export default function ChatHistory() {
         `}
           ></div>
         </button>
-        <h3 className="text-lg font-bold text-gray-800 mb-2">Recent Topics</h3>
-        <div
-          className="mb-4 h-96 w-full overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-4"
-          style={{ height: "250px" }}
+        <h3
+          className={`text-lg font-bold mb-2 ${
+            darkMode ? "text-gray-200" : "text-gray-800"
+          }`}
         >
+          Recent Topics
+        </h3>
+
+        <div
+          className={`mb-4 h-66 w-full overflow-y-auto space-y-2 rounded-lg p-4 ${
+            darkMode ? "bg-gray-700" : "bg-gray-50"
+          } scrollbar-thin`}
+          style={{
+            scrollbarWidth: "thin" 
+          }}>
           {/*Chat History */}
           <div className="space-y-2" onClick={handleClickOutside}>
             {topics
@@ -349,19 +367,33 @@ export default function ChatHistory() {
                 <div key={index} className="relative flex items-center">
                   {editingIndex === index ? (
                     // Editing mode
-                    <div className="w-full flex items-center bg-white border border-blue-300 rounded-lg px-2 py-1">
+                    <div
+                      className={`w-full flex items-center border rounded-lg px-2 py-1 ${
+                        darkMode
+                          ? "bg-gray-600 border-gray-500"
+                          : "bg-white border-blue-300"
+                      }`}
+                    >
                       <input
                         ref={inputRef}
                         type="text"
                         value={editValue}
                         onChange={(e) => setEditValue(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        className="flex-grow px-1 py-1 text-sm text-gray-600 outline-none"
+                        className={`flex-grow px-1 py-1 text-sm outline-none ${
+                          darkMode
+                            ? "bg-gray-600 text-gray-200"
+                            : "text-gray-600 bg-white"
+                        }`}
                       />
                       <div className="flex space-x-1">
                         <button
                           onClick={saveEdit}
-                          className="p-1 text-green-600 hover:bg-gray-100 rounded-full"
+                          className={`p-1 rounded-full ${
+                            darkMode
+                              ? "text-green-300 hover:bg-gray-500"
+                              : "text-green-600 hover:bg-gray-100"
+                          }`}
                         >
                           <Check size={16} />
                         </button>
@@ -371,13 +403,21 @@ export default function ChatHistory() {
                     // Normal mode
                     <button
                       onClick={() => setActiveTopic(topic.id)}
-                      className={`w-full text-left px-3 py-2 hover:bg-gray-100 rounded-lg text-sm text-gray-700 transition flex items-center justify-between ${
-                        activeTopic === topic.id ? "bg-blue-100" : "bg-gray-50"
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition flex items-center justify-between ${
+                        activeTopic === topic.id
+                          ? darkMode
+                            ? "bg-blue-900 text-blue-100"
+                            : "bg-blue-100 text-blue-800"
+                          : darkMode
+                          ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                          : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                       }`}
                     >
                       <span>{topic.title}</span>
                       <div
-                        className="cursor-pointer p-1 rounded-full hover:bg-gray-200"
+                        className={`cursor-pointer p-1 rounded-full ${
+                          darkMode ? "hover:bg-gray-600" : "hover:bg-gray-200"
+                        }`}
                         onClick={(e) => handleMenuToggle(e, index)}
                       >
                         <MoreVertical size={16} />
@@ -387,9 +427,21 @@ export default function ChatHistory() {
 
                   {/* Menu dropdown */}
                   {openMenuId === index && (
-                    <div className="absolute right-0 top-full mt-1 bg-white shadow-lg rounded-md py-1 z-10 border border-gray-200">
+                    <div
+                      className={`absolute right-0 top-full mt-1 shadow-lg rounded-md py-1 z-10 border ${
+                        darkMode
+                          ? "bg-gray-700 border-gray-600"
+                          : "bg-white border-gray-200"
+                      }`}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {" "}
                       <button
-                        className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                        className={`flex items-center px-3 py-2 text-sm w-full text-left ${
+                          darkMode
+                            ? "text-gray-300 hover:bg-gray-600"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
                         onClick={(e) => {
                           e.stopPropagation();
                           startEditing(index);
@@ -399,7 +451,11 @@ export default function ChatHistory() {
                         Rename
                       </button>
                       <button
-                        className="flex items-center px-3 py-2 text-sm text-red-600 hover:bg-gray-100 w-full text-left"
+                        className={`flex items-center px-3 py-2 text-sm w-full text-left ${
+                          darkMode
+                            ? "text-red-300 hover:bg-gray-600"
+                            : "text-red-600 hover:bg-gray-100"
+                        }`}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDelete(index);
@@ -416,7 +472,11 @@ export default function ChatHistory() {
         </div>
 
         <div>
-          <h3 className="text-lg font-bold text-gray-800 mb-2">
+          <h3
+            className={`text-lg font-bold mb-2 ${
+              darkMode ? "text-gray-200" : "text-gray-800"
+            }`}
+          >
             Suggested Resources
           </h3>
           <div className="space-y-2">
@@ -427,9 +487,13 @@ export default function ChatHistory() {
             ].map((resource) => (
               <div
                 key={resource}
-                className="bg-blue-50 p-2 rounded-lg border border-blue-100"
+                className={`p-2 rounded-lg border ${
+                  darkMode
+                    ? "bg-blue-700 border-blue-800 text-blue-100"
+                    : "bg-blue-50 border-blue-100 text-blue-700"
+                }`}
               >
-                <div className="text-sm font-medium text-blue-700">
+                <div className="text-sm font-medium">
                   {resource}
                 </div>
               </div>
@@ -439,7 +503,11 @@ export default function ChatHistory() {
       </div>
 
       {/* Chat Interface */}
-      <div className="bg-white rounded-lg shadow-xl flex flex-col h-[600px] overflow-hidden order-1 md:order-2 md:col-span-3">
+      <div
+        className={`rounded-lg shadow-xl flex flex-col h-[600px] overflow-hidden order-1 md:order-2 md:col-span-3 ${
+          darkMode ? "bg-gray-800" : "bg-gray-50"
+        }`}
+      >
         {/* Chat Messages */}
         <div className="flex-grow p-6 overflow-y-auto">
           <div className="space-y-4">
@@ -455,28 +523,46 @@ export default function ChatHistory() {
                     msg.type === "user"
                       ? "bg-blue-600 text-white"
                       : msg.type === "system"
-                      ? "bg-gray-100 text-gray-800 border border-gray-200"
+                      ? darkMode
+                        ? "bg-gray-700 text-gray-200 border border-gray-600"
+                        : "bg-gray-100 text-gray-800 border border-gray-200"
+                      : darkMode
+                      ? "bg-indigo-900 text-gray-200 border border-indigo-800"
                       : "bg-indigo-50 text-gray-800 border border-indigo-100"
                   }`}
                 >
                   <div className="text-sm">{msg.content}</div>
 
-                  {/* References for assistant messages */}
-                  {msg.type === "assistant" &&
+                  {/* References for system messages */}
+                  {msg.type === "system" &&
                     msg.references &&
                     msg.references.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-indigo-200">
-                        <div className="text-xs font-medium text-indigo-700 mb-1">
+                      <div
+                        className={`mt-2 pt-2 ${
+                          darkMode
+                            ? "border-t border-indigo-700"
+                            : "border-t border-indigo-200"
+                        }`}
+                      >
+                        <div
+                          className={`text-xs font-medium mb-1 ${
+                            darkMode ? "text-indigo-300" : "text-indigo-700"
+                          }`}
+                        >
                           References:
                         </div>
-                        <div className="text-xs text-indigo-600">
+                        <div
+                          className={`text-xs ${
+                            darkMode ? "text-indigo-300" : "text-indigo-600"
+                          }`}
+                        >
                           {msg.references}
                         </div>
                       </div>
                     )}
 
-                  {/* Confidence Score for assistant messages */}
-                  {msg.type === "assistant" && msg.confidence && (
+                  {/* Confidence Score for system messages */}
+                  {msg.type === "system" && msg.confidence && (
                     <div className="mt-2 flex items-center justify-between">
                       <div className="flex items-center">
                         <span
@@ -497,8 +583,12 @@ export default function ChatHistory() {
                           onClick={() => setChatFeedback(idx + "-thumbs-up")}
                           className={
                             chatFeedback === idx + "-thumbs-up"
-                              ? "p-1 text-green-700"
-                              : "p-1 hover:text-green-400 transition"
+                              ? darkMode
+                                ? "p-1 text-green-300"
+                                : "p-1 text-green-700"
+                              : darkMode
+                              ? "p-1 text-gray-400 hover:text-green-300 transition"
+                              : "p-1 text-gray-500 hover:text-green-400 transition"
                           }
                         >
                           <ThumbsUp className="h-3 w-3" />
@@ -507,8 +597,12 @@ export default function ChatHistory() {
                           onClick={() => setChatFeedback(idx + "-thumbs-down")}
                           className={
                             chatFeedback === idx + "-thumbs-down"
-                              ? "p-1 text-red-700"
-                              : "p-1 hover:text-red-400 transition"
+                              ? darkMode
+                                ? "p-1 text-red-300"
+                                : "p-1 text-red-700"
+                              : darkMode
+                              ? "p-1 text-gray-400 hover:text-red-300 transition"
+                              : "p-1 text-gray-500 hover:text-red-400 transition"
                           }
                         >
                           <ThumbsDown className="h-3 w-3" />
@@ -523,7 +617,13 @@ export default function ChatHistory() {
         </div>
 
         {/* Input Area */}
-        <div className="border-t border-gray-200 bg-gray-50 p-4">
+        <div
+          className={`border-t p-4 ${
+            darkMode
+              ? "border-gray-700 bg-gray-700"
+              : "border-gray-200 bg-gray-50"
+          }`}
+        >
           <div className="flex space-x-2">
             <input
               type="text"
@@ -531,17 +631,23 @@ export default function ChatHistory() {
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Ask about security policies, compliance requirements, etc."
-              className="flex-grow rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white border-gray-300 text-gray-700"
+              className={`flex-grow rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                darkMode
+                  ? "bg-gray-800 border-gray-600 text-gray-200 placeholder-gray-400"
+                  : "bg-white border-gray-300 text-gray-700 placeholder-gray-400"
+              }`}
             />
 
             {/* Voice Input Button */}
             <button
               onClick={toggleRecording}
-              className={`rounded-lg p-2 ${
+              className={`rounded-lg p-2 transition relative ${
                 recording
                   ? "bg-red-600 text-white"
+                  : darkMode
+                  ? "bg-gray-600 text-gray-200 hover:bg-gray-500"
                   : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              } transition relative`}
+              }`}
             >
               <Mic className="h-5 w-5" />
               {recording && (
@@ -554,7 +660,11 @@ export default function ChatHistory() {
 
             <button
               onClick={submitMessage}
-              className="rounded-lg p-2 bg-blue-500 text-white hover:bg-blue-600 transition"
+              className={`rounded-lg p-2 text-white transition ${
+                darkMode
+                  ? "bg-blue-600 hover:bg-blue-700"
+                  : "bg-blue-500 hover:bg-blue-600"
+              }`}
             >
               <Send className="h-5 w-5" />
             </button>
