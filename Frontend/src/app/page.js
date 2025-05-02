@@ -407,7 +407,7 @@ export default function UnifiedQnAAssistant() {
       "https://drive.google.com/file/d/1USwf07Z09NRoPO7f8RAm7nDW-nEUz-f-/view?usp=drive_link",
     "Cloud Security Policy":
       "https://drive.google.com/file/d/1cczBDiYu2LhpOjR02NoKdARuEOVIxjnr/view?usp=drive_link",
-    "Business Continuity and Disaster Recovery (BCP/DR) Policy":
+    "Business Continuity and Disaster Recovery (BCP_DR) Policy":
       "https://drive.google.com/file/d/1nMCTuGtBJeJTUs6kTgqmHBYpqNqOCHud/view?usp=drive_link",
     "Access Control Policy":
       "https://drive.google.com/file/d/1BhrnzhWrFToXTz3dELuorLu65OfRkCh1/view?usp=drive_link",
