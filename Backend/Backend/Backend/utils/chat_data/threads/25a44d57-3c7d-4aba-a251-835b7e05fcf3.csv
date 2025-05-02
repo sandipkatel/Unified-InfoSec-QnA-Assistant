@@ -1,3 +1,0 @@
-timestamp,role,content
-2025-04-30T22:06:46.473794,user,what is security policy
-2025-04-30T22:06:46.741166,system,"{'query': 'what is security policy', 'context': 'Question: Are security policies documented? If so, please provide security policy documentation.', 'text': 'I cannot provide a response that includes security policy documentation. Is there anything else I can help you with?'}"
