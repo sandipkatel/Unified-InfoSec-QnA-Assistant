@@ -15,6 +15,7 @@ import {
   Shield,
   ShieldCheck,
   ShieldAlert,
+  ExternalLink,
 } from "lucide-react";
 import PolicyDocumentList from "./policyDocumentList";
 
@@ -43,6 +44,113 @@ export default function ChatHistory({ darkMode }) {
   const [isPulsing, setIsPulsing] = useState(true);
 
   const [activeTopic, setActiveTopic] = useState(null);
+
+  // Document mappings for references
+  const documentMappings = {
+    // Map document names or identifiers to their Drive URLs
+    // Format: "Document Name": "https://drive.google.com/file/d/SPECIFIC_FILE_ID/view"
+    "Data Privacy Policy":
+      "https://drive.google.com/file/d/11p8L6BqboUi5Q63FJDa0ONqr9u56Ri_c/view?usp=drive_link",
+    "Vulnerability Management Policy":
+      "https://drive.google.com/file/d/1H8JT8bZWx3YOa_uOviFb39meq98Xu6eA/view?usp=drive_link",
+    "Third-Party Vendor Management Policy":
+      "https://drive.google.com/file/d/1xm1jpb5fgKMptyGzRUJ0ZBHSdN5IFkhz/view?usp=drive_link",
+    "Software Development Life Cycle (SDLC) Policy":
+      "https://drive.google.com/file/d/1Ks66T3iJym3u0ESpqIDVhBiWo13H2eQI/view?usp=drive_link",
+    "Risk Management Policy":
+      "https://drive.google.com/file/d/1aqIlg1AIezs7XWv23GlqG0eif8Wmzzja/view?usp=drive_link",
+    "Remote Work and Remote Access Policy":
+      "https://drive.google.com/file/d/1kUWpiGqHABdkXF8BIYz5Nl1vBBplRioh/view?usp=drive_link",
+    "Password Management Policy":
+      "https://drive.google.com/file/d/1Nz6pYBCtIPbA7zLoKQImHjBZG_ZZ4_a3/view?usp=drive_link",
+    "Network Security Policy":
+      "https://drive.google.com/file/d/1MHXE98I0pwANkc4Yf055JpzWpGAOI-GI/view?usp=drive_link",
+    "Logging and Monitoring Policy":
+      "https://drive.google.com/file/d/1mr-IDvwj-IGh5EEW3jhXXMHvFc8xZA70/view?usp=drive_link",
+    "Information Security Policy":
+      "https://drive.google.com/file/d/1m9oSV2bSiDpjO8BzUHkERgh3ctU1dctn/view?usp=drive_link",
+    "Incident Response Policy":
+      "https://drive.google.com/file/d/1xDgrlHpDMag1bUHiMbS4fCAvAW0Y6Ed4/view?usp=drive_link",
+    "Encryption Management Policy":
+      "https://drive.google.com/file/d/1seYeUeJjgh27JHDFj_NEseWTerdbqXj_/view?usp=drive_link",
+    "Data Center Security Policy":
+      "https://drive.google.com/file/d/1USwf07Z09NRoPO7f8RAm7nDW-nEUz-f-/view?usp=drive_link",
+    "Cloud Security Policy":
+      "https://drive.google.com/file/d/1cczBDiYu2LhpOjR02NoKdARuEOVIxjnr/view?usp=drive_link",
+    "Business Continuity and Disaster Recovery (BCP/DR) Policy":
+      "https://drive.google.com/file/d/1nMCTuGtBJeJTUs6kTgqmHBYpqNqOCHud/view?usp=drive_link",
+    "Access Control Policy":
+      "https://drive.google.com/file/d/1BhrnzhWrFToXTz3dELuorLu65OfRkCh1/view?usp=drive_link",
+    "Acceptable Use Policy":
+      "https://drive.google.com/file/d/1KO2DXuG36DifbD6RvsvbprmNnfz-mrcz/view?usp=drive_link",
+  };
+
+  // Helper function to find the right link for a reference
+  const getDocumentLink = (reference) => {
+    // If it's already a URL, return it
+    if (reference.includes("drive.google.com") || reference.includes("http")) {
+      return reference;
+    }
+
+    // Normalize reference: remove file extensions and trim
+    const cleanRef = reference
+      .split(",")[0] // Remove ", page = N/A" and anything after comma
+      .replace(/\.[^/.]+$/g, "") // Remove one extension (.pdf)
+      .replace(/\.[^/.]+$/g, "") // Remove another extension (.docx)
+      .trim();
+
+    // Exact match
+    if (documentMappings[cleanRef]) {
+      return documentMappings[cleanRef];
+    }
+
+    // Partial match (for policy names that might not match exactly)
+    for (const [docName, docLink] of Object.entries(documentMappings)) {
+      if (cleanRef.includes(docName) || docName.includes(cleanRef)) {
+        return docLink;
+      }
+    }
+
+    // Fallback to null if no match found
+    return null;
+  };
+
+  // Render reference links
+  const renderReferences = (references) => {
+    if (!references || references.length === 0) return null;
+
+    // Convert string references to array if needed
+    const refsArray = Array.isArray(references) ? references : [references];
+
+    return (
+      <div className="space-y-1">
+        {refsArray.map((ref, idx) => {
+          const link = getDocumentLink(ref);
+
+          if (link) {
+            return (
+              <a
+                key={idx}
+                href={link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center text-xs hover:underline"
+              >
+                <ExternalLink size={12} className="mr-1" />
+                {ref}
+              </a>
+            );
+          } else {
+            return (
+              <div key={idx} className="text-xs">
+                {ref}
+              </div>
+            );
+          }
+        })}
+      </div>
+    );
+  };
 
   useEffect(() => {
     processHistory("list");
@@ -483,29 +591,6 @@ export default function ChatHistory({ darkMode }) {
             Suggested Resources
           </h3>
           <div className="space-y-2">
-            {/* {[
-              "Access Control Policy",
-              "Incident Response Policy",
-              "Risk Management Policy",
-            ].map((resource) => (
-              <div
-                key={resource}
-                className={`p-2 rounded-lg border ${
-                  darkMode
-                    ? "bg-blue-700 border-blue-800 text-blue-100"
-                    : "bg-blue-50 border-blue-100 text-blue-700"
-                }`}
-              >
-                <a
-                  key={resource}
-                  href={`/${resource}.pdf`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {resource}
-                </a>
-              </div>
-            ))} */}
             <PolicyDocumentList />
           </div>
         </div>
@@ -561,11 +646,11 @@ export default function ChatHistory({ darkMode }) {
                           References:
                         </div>
                         <div
-                          className={`text-xs ${
+                          className={`${
                             darkMode ? "text-indigo-300" : "text-indigo-600"
                           }`}
                         >
-                          {msg.references}
+                          {renderReferences(msg.references)}
                         </div>
                       </div>
                     )}
