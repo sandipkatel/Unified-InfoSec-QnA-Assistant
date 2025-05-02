@@ -1,0 +1,5 @@
+timestamp,role,content
+2025-05-02T12:27:54.258288,user,what is the primary location
+2025-05-02T12:27:54.275279,system,"The primary location of DanfeCorp's primary data center is located in Dhulikhel, Nepal.. "
+2025-05-02T12:29:39.482822,user,What's the average response time to security incidents?
+2025-05-02T12:29:39.608996,system,No Answer Available. Danfe Corp's average response time to security incidents is less than 24 hours.

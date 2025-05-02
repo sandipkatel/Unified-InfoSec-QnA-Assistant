@@ -142,12 +142,11 @@ def analyze_question(request):
         # Get and return the final answer
         result = answer_query(query)
         print("res", result)
-        print("ref", result.get("references", []))
         response_data = {
             "type": "system",
             "content": {"text": result.get("answer", "") + '. ' + result.get("details", '')},
-            "references": result.get("category", []),
-            "confidence_score": result.get("confidence", 0.0),
+            "references": result.get("references", []) or result.get("category", []),
+            "confidence_score": calculate_confidence(result.get("score", 0.0)),
             "all_matches": []  # add matches if needed
         }
         print("response_data", response_data)
@@ -282,49 +281,21 @@ def analyze_questionnaire(request):
                 "error": "File must contain a 'Questions' column"
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        # Load embedding model and vector store
+        # Load embedding model and vector stores
         embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-        csv_vectorstore = FAISS.load_local(
-            "../faiss_csv_index/faiss_csv_index", 
-            embeddings=embedding_model, 
+        csv_store = FAISS.load_local(
+            "../faiss_csv_index",
+            embeddings=embedding_model,
             allow_dangerous_deserialization=True
         )
-        pdf_vectorstore = FAISS.load_local(
-            "../faiss_pdf_index", 
-            embeddings=embedding_model, 
+        pdf_store = FAISS.load_local(
+            "../faiss_pdf_index",
+            embeddings=embedding_model,
             allow_dangerous_deserialization=True
         )
-        
-        # Define function for hybrid retrieval - same as in analyze_question
-        # def retrieve_hybrid_results(query, top_k=1, threshold=0.6):
-        #     # Search in CSV store
-        #     csv_results_raw = csv_store.similarity_search_with_score(query, k=1)
-        #     csv_results = []
-        #     csv_score = None
 
-        #     if csv_results_raw:
-        #         for doc, score in csv_results_raw:
-        #             doc.metadata['source'] = 'csv'
-        #             doc.metadata['score'] = score
-        #             csv_results.append(doc)
-        #             csv_score = score
-        #         return csv_results, csv_score  # Early return if CSV results found
-
-        #     # Search in PDF store
-        #     pdf_results_raw = pdf_store.similarity_search_with_score(query, k=top_k)
-        #     pdf_results = []
-        #     pdf_score = None
-
-        #     for doc, score in pdf_results_raw:
-        #         if score <= threshold:  # Lower score is better in FAISS
-        #             doc.metadata['source'] = 'pdf'
-        #             doc.metadata['score'] = score
-        #             pdf_results.append(doc)
-        #             pdf_score = score
-
-        #     return pdf_results, pdf_score
         def retrieve_hybrid_results(query, top_k=5, threshold=0.2):
-            csv_results = csv_vectorstore.similarity_search_with_score(query, k=top_k)
+            csv_results = csv_store.similarity_search_with_score(query, k=top_k)
             filtered_csv = [(doc, score) for doc, score in csv_results if score <= threshold]
 
             if filtered_csv:
@@ -337,7 +308,7 @@ def analyze_questionnaire(request):
             else:
                 print("No relevant results found in CSV. Searching in PDF...")
 
-            pdf_results = pdf_vectorstore.similarity_search_with_score(query, k=top_k)
+            pdf_results = pdf_store.similarity_search_with_score(query, k=top_k)
             filtered_pdf = [(doc, score) for doc, score in pdf_results if score > threshold]
 
             if filtered_pdf:
@@ -347,107 +318,78 @@ def analyze_questionnaire(request):
 
             print("No relevant results found in both CSV and PDF.")
             return []
-        
+
         def calculate_confidence(score):
             if score is None:
                 return 0.0
-                
-            # Convert FAISS distance to confidence score (0-1)
-            # Lower distance means higher similarity in FAISS
+
+            # Convert FAISS distance (0–2) to confidence (0–1)
             confidence = max(0, min(1, 1 - (score / 2)))
             return round(confidence, 2)
-        
-        # Define answer_query function - similar to analyze_question
+
         def answer_query(query):
-            docs, score = retrieve_hybrid_results(query, top_k=10)
+            docs_with_scores = retrieve_hybrid_results(query, top_k=5)
             
-            if not docs:
-                return {
-                    "source": "none",
-                    "answer": "Based on our knowledge base, I don't have enough information to provide a specific answer to that question. Would you like me to forward this to our security team for a detailed response?",
-                    "confidence": 0.0,
-                    "references": [],
-                    "all_matches": []
-                }
-            
-            source = docs[0].metadata.get("source")
-            references = []
-            content_matches = [doc.page_content for doc in docs]
-            
-            if source == "csv":
-                doc = docs[0]
-                content = doc.page_content
+            if docs_with_scores:
+                doc, score = docs_with_scores[0]
                 
-                # Extract fields using regex
-                question_match = re.search(r"Question:\s*(.*?)\s*\|", content)
-                answer_match = re.search(r"Answer:\s*(.*?)\s*\|", content)
-                details_match = re.search(r"Details:\s*(.*?)\s*\|", content)
-                category_match = re.search(r"Category:\s*(.*)", content)
-                
-                question = question_match.group(1).strip() if question_match else "No question"
-                answer = answer_match.group(1).strip() if answer_match else "No answer"
-                details = details_match.group(1).strip() if details_match else "No details"
-                category = category_match.group(1).strip() if category_match else "No category"
-                
-                # Handle "nan" values
-                question = "No question" if question.lower() == "nan" else question
-                answer = "No answer" if answer.lower() == "nan" else answer
-                details = "No details" if details.lower() == "nan" else details
-                category = "No category" if category.lower() == "nan" else category
-                
-                return {
-                    "source": "csv",
-                    "confidence": calculate_confidence(score),
-                    "answer": f"{answer}. {details}",
-                    "references": [category],
-                    "all_matches": content_matches
-                }
-                
-            elif source == "pdf":
-                # Combine content and references
-                pdf_context = "\n\n".join([doc.page_content for doc in docs])
-                references = set()
-                
-                for doc in docs:
-                    doc_name = doc.metadata.get("document_name", "Unknown Document")
-                    page = doc.metadata.get("page_number", "N/A")
-                    references.add(f"{doc_name}, Page: {page}")
+                if 'answer' in doc.metadata or 'details' in doc.metadata or 'category' in doc.metadata:
+                    answer = doc.metadata.get('answer', 'No answer available')
+                    details = doc.metadata.get('details', 'No details available')
+                    category = doc.metadata.get('category', 'No category available')
                     
-                custom_prompt = """
-                You are an InfoSec QA assistant. Answer security and compliance questions using only the provided context.
-                For each response:
-                - Ensure that the context is in a readable format if it is not already.
-                - Do not change, add, or remove any words from the context. Preserve its original meaning exactly.
-                
-                Response style:
-                [your refined response with context preserved]
-                
-                Context:
-                {context}
-                Question:
-                {query}
-                """
-                
-                llm = ChatOllama(model="llama3.2:latest")
-                prompt = ChatPromptTemplate.from_template(custom_prompt)
-                chain = LLMChain(prompt=prompt, llm=llm)
-                
-                response = chain.invoke({"query": query, "context": pdf_context})
-                
-                return {
-                    "source": "pdf",
-                    "confidence": calculate_confidence(score),
-                    "answer": response['text'],
-                    "references": list(references),
-                    "all_matches": content_matches
-                }
-                
+                    answer = "No answer available" if str(answer).lower() == "nan" else answer
+                    details = "No details available" if str(details).lower() == "nan" else details
+                    category = "No category available" if str(category).lower() == "nan" else category
+                    print("csv")
+                    return {
+                        "source": "csv",
+                        "score": float(score),
+                        "answer": answer,
+                        "details": details,
+                        "category": category
+                    }
+
+                elif doc.metadata.get("source") == "pdf":
+                    pdf_context = "\n\n".join([d.page_content for d, _ in docs_with_scores])
+                    references = set()
+                    
+                    for d, _ in docs_with_scores:
+                        doc_name = d.metadata.get("document_name", "Unknown Document")
+                        page = d.metadata.get("page_number", "N/A")
+                        references.add(f"{doc_name}, Page: {page}")
+
+                    custom_prompt = """
+                    You are an InfoSec QA assistant. Answer security and compliance questions using only the provided context.
+                    For each response:
+                    - Ensure that the context is in a readable format if it is not already.
+                    - Do not change, add, or remove any words from the context. Preserve its original meaning exactly.
+                    
+                    Response style:
+                    [your refined response with context preserved]
+                    
+                    Context:
+                    {context}
+                    Question:
+                    {query}
+                    """
+                    
+                    llm = ChatOllama(model="llama3.2:latest")
+                    prompt = ChatPromptTemplate.from_template(custom_prompt)
+                    chain = LLMChain(prompt=prompt, llm=llm)
+                    response = chain.invoke({"query": query, "context": pdf_context})
+
+                    return {
+                        "source": "pdf",
+                        "score": float(score),
+                        "answer": response['text'],
+                        "references": list(references)
+                    }
+
             return {
                 "source": "none",
-                "answer": "No relevant information found.",
-                "confidence": 0.0,
-                "references": [],
-                "all_matches": []
+                "score": None,
+                "answer": "No relevant information found."
             }
         
         # Process each question in the file
@@ -466,16 +408,17 @@ def analyze_questionnaire(request):
             # Get answer for this question using the same process as analyze_question
             result = answer_query(question)
             
-            # Format the result - ensure response is a simple string, not an object
+            # Format the result similar to analyze_question
+            confidence_score = calculate_confidence(result.get("score", 0.0))
+            
             result_entry = {
                 "id": question_id,
                 "question": question,
-                "suggestedAnswer": result["answer"],
-                "confidence_score": result["confidence"] * 100,  # Convert to percentage
-                "references": result["references"][:2] if result["references"] else [],  # Limit to 2 references
-                "all_matches": result["all_matches"]
+                "suggestedAnswer": result.get("answer", "") + '. ' + result.get("details", ""),
+                "confidence_score": confidence_score * 100,  # Convert to percentage
+                "references": result.get("references", []) or result.get("category", [])
             }
-            print(result_entry)
+            print("ref", result_entry)
             
             results.append(result_entry)
             

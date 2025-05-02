@@ -807,12 +807,19 @@ export default function UnifiedQnAAssistant() {
                       Reference
                     </div>
                     <ul className="space-y-1 text-sm">
-                      {item.references.map((ref, idx) => (
-                        <li key={idx} className="flex items-start">
+                      {Array.isArray(item.references) ? (
+                        item.references.map((ref, idx) => (
+                          <li key={idx} className="flex items-start">
+                            <Info className="h-4 w-4 text-blue-500 mr-1 mt-0.5" />
+                            {ref}
+                          </li>
+                        ))
+                      ) : (
+                        <li className="flex items-start">
                           <Info className="h-4 w-4 text-blue-500 mr-1 mt-0.5" />
-                          {ref}
+                          {item.references}
                         </li>
-                      ))}
+                      )}
                     </ul>
                   </div>
                 )}
