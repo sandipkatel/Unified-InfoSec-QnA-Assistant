@@ -299,7 +299,134 @@ export default function UnifiedQnAAssistant() {
       setIsProcessing(false);
     }
   };
+  const convertToCSV = (results) => {
+    if (!results || !results.questions || !results.questions.length) {
+      return "";
+    }
 
+    // Define CSV headers
+    const headers = [
+      "ID",
+      "Question",
+      "Answer",
+      "Confidence Score",
+      "Status",
+      "References",
+    ];
+
+    // Create CSV content with headers
+    let csvContent = headers.join(",") + "\n";
+
+    // Add data rows
+    results.questions.forEach((item) => {
+      // Clean the text fields to handle commas and quotes properly
+      const cleanField = (field) => {
+        if (field === null || field === undefined) return "";
+        const stringField = String(field);
+        // Escape quotes and wrap in quotes if contains commas or quotes
+        if (stringField.includes(",") || stringField.includes('"')) {
+          return `"${stringField.replace(/"/g, '""')}"`;
+        }
+        return stringField;
+      };
+
+      // Format references as a single string
+      const references = Array.isArray(item.references)
+        ? item.references.join("; ")
+        : item.references || "";
+
+      // Determine the status based on feedback or confidence
+      const status = item.feedback
+        ? item.feedback
+        : parseFloat(item.confidence_score) >= 80
+        ? "Approved"
+        : "Needs Review";
+
+      // Create the row
+      const row = [
+        cleanField(item.id),
+        cleanField(item.question),
+        cleanField(item.suggestedAnswer),
+        cleanField(item.confidence_score),
+        cleanField(status),
+        cleanField(references),
+      ].join(",");
+
+      csvContent += row + "\n";
+    });
+
+    return csvContent;
+  };
+
+  const downloadFile = (content, filename, contentType) => {
+    const blob = new Blob([content], { type: contentType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadResultsAsCSV = (results) => {
+    const csvContent = convertToCSV(results);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const filename = `security-questionnaire-results-${timestamp}.csv`;
+    downloadFile(csvContent, filename, "text/csv");
+  };
+
+  const handleFeedback = (questionId, feedbackType) => {
+    // Update results with feedback
+    setResults((prevResults) => {
+      if (!prevResults) return prevResults;
+
+      const updatedQuestions = prevResults.questions.map((q) => {
+        if (q.id === questionId) {
+          return {
+            ...q,
+            feedback: feedbackType,
+            // Update the confidence score based on feedback
+            confidence_score: q.confidence_score,
+          };
+        }
+        return q;
+      });
+
+      // Count updated confidence levels
+      const updatedConfidenceCounts = {
+        high: 0,
+        medium: 0,
+        low: 0,
+      };
+
+      updatedQuestions.forEach((question) => {
+        const numConfidence = parseFloat(question.confidence_score);
+        if (!isNaN(numConfidence)) {
+          if (numConfidence >= 80) {
+            updatedConfidenceCounts.high++;
+          } else if (numConfidence >= 50) {
+            updatedConfidenceCounts.medium++;
+          } else {
+            updatedConfidenceCounts.low++;
+          }
+        } else if (question.confidence in updatedConfidenceCounts) {
+          updatedConfidenceCounts[question.confidence]++;
+        }
+      });
+
+      return {
+        ...prevResults,
+        questions: updatedQuestions,
+        confidence: updatedConfidenceCounts,
+      };
+    });
+
+    // Show feedback notification
+    showNotification(
+      `Question ${questionId} marked as ${feedbackType}`,
+      feedbackType === "Approved" ? "success" : "error"
+    );
+  };
   // Toggle details for a specific question
   const toggleDetails = (id) => {
     setShowDetails((prev) => ({
@@ -751,6 +878,16 @@ export default function UnifiedQnAAssistant() {
               key={item.id}
               className={`${
                 darkMode ? "hover:bg-gray-800" : "hover:bg-gray-50"
+              } ${
+                item.feedback === "Approved"
+                  ? darkMode
+                    ? "bg-green-900/20"
+                    : "bg-green-50"
+                  : item.feedback === "Rejected"
+                  ? darkMode
+                    ? "bg-red-900/20"
+                    : "bg-red-50"
+                  : ""
               }`}
             >
               <td className="px-2 py-4 text-center">
@@ -849,6 +986,17 @@ export default function UnifiedQnAAssistant() {
                     <div>{getRecommendation(item.confidence_score)}</div>
                   </div>
                 </div>
+                {item.feedback && (
+                  <div
+                    className={`mt-1 text-xs font-medium ${
+                      item.feedback === "Approved"
+                        ? "text-green-500"
+                        : "text-red-500"
+                    }`}
+                  >
+                    {item.feedback}
+                  </div>
+                )}
               </td>
               <td className="px-3 py-4 text-sm font-medium flex-row text-right space-x-3">
                 <button
@@ -863,10 +1011,26 @@ export default function UnifiedQnAAssistant() {
                     <ChevronRight className="h-5 w-5" />
                   )}
                 </button>
-                <button className="text-gray-600 hover:text-green-900">
+                <button
+                  className={`${
+                    item.feedback === "Approved"
+                      ? "text-green-600"
+                      : "text-gray-600 hover:text-green-600"
+                  }`}
+                  onClick={() => handleFeedback(item.id, "Approved")}
+                  title="Approve this answer"
+                >
                   <ThumbsUp className="h-5 w-5" />
                 </button>
-                <button className="text-gray-600 hover:text-red-900">
+                <button
+                  className={`${
+                    item.feedback === "Rejected"
+                      ? "text-red-600"
+                      : "text-gray-600 hover:text-red-600"
+                  }`}
+                  onClick={() => handleFeedback(item.id, "Rejected")}
+                  title="Reject this answer"
+                >
                   <ThumbsDown className="h-5 w-5" />
                 </button>
               </td>
@@ -968,25 +1132,48 @@ export default function UnifiedQnAAssistant() {
           {renderResultsSummary()}
           {renderFilterControls()}
           {renderResultsTable()}
-
-          <div className="flex justify-between">
-            <button
-              onClick={resetBatchProcess}
-              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
-            >
-              Process Another Questionnaire
-            </button>
-            <button
-              className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition"
-              onClick={() =>
-                showNotification("Answers submitted successfully!", "success")
-              }
-            >
-              Download All Results
-            </button>
-          </div>
+          {renderResultsActions()}
         </div>
       )}
+    </div>
+  );
+
+  const renderResultsActions = () => (
+    <div className="flex justify-between">
+      <button
+        onClick={resetBatchProcess}
+        className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+      >
+        Process Another Questionnaire
+      </button>
+      <div className="flex space-x-3">
+        <button
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition flex items-center"
+          onClick={() => downloadResultsAsCSV(results)}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5 mr-2"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+              clipRule="evenodd"
+            />
+          </svg>
+          Download CSV
+        </button>
+        <button
+          className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition"
+          onClick={() =>
+            showNotification("Answers submitted successfully!", "success")
+          }
+        >
+          Submit Answers
+        </button>
+      </div>
     </div>
   );
 
