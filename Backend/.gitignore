@@ -32,3 +32,4 @@ Thumbs.db
 # Environment variables
 *.env
 
+**/chat_data/*
