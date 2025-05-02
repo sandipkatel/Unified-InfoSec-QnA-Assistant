@@ -1,5 +1,0 @@
-timestamp,role,content
-2025-04-30T21:01:52.217452,user,what is your name
-2025-04-30T21:01:52.327738,system,"{'query': 'what is your name', 'context': 'Question: Personal data is pseudonymised as soon as possible | Answer: Yes | Details: nan | Category: Data Security', 'text': ""I don't have a personal name.""}"
-2025-04-30T21:03:24.035661,user,Do you monitor security events?
-2025-04-30T21:03:24.102550,system,"{'query': 'Do you monitor security events?', 'context': ""Question: Do you monitor security events? | Answer: Yes | Details: Danfe Corp's security monitoring systems leverage SIEM solutions to correlate and analyze log data from various sources, enabling real-time threat detection. | Category: Application"", 'text': ""Yes. Danfe Corp's security monitoring systems leverage SIEM solutions to correlate and analyze log data from various sources, enabling real-time threat detection.""}"

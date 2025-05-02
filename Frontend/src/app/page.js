@@ -1019,6 +1019,13 @@ export default function UnifiedQnAAssistant() {
           {activeTab === "batch" ? renderBatchMode() : renderChatMode()}
         </div>
       </main>
+
+      {/* Footer */}
+      {/* <footer className="absolute inset-x-0 -bottom-10 bg-gray-800 b-0 text-gray-300 py-4">
+        <div className="container mx-auto px-4 text-center text-sm">
+          <p>Unified InfoSec QnA Assistant v2.0 • Team Brahma</p>
+        </div>
+      </footer> */}
     </div>
   );
 }

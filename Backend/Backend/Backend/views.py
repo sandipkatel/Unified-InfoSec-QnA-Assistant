@@ -285,7 +285,7 @@ def analyze_questionnaire(request):
         # Load embedding model and vector store
         embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
         csv_vectorstore = FAISS.load_local(
-            "../faiss_csv_index/faiss_csv_index", 
+            "../faiss_csv_index", 
             embeddings=embedding_model, 
             allow_dangerous_deserialization=True
         )

@@ -1,5 +1,0 @@
-timestamp,role,content
-2025-04-30T16:27:07.572946,user,encryption
-2025-04-30T16:27:07.572946,system,"Please provide details about encryption Program including encryption method, Key rotation, etc."
-2025-04-30T16:28:04.620144,user,Data Classification
-2025-04-30T16:28:04.620144,system,Question: Does the Vendor have an established Data Classification program? | Answer: No | Details: nan | Category: Data Governance and Classification

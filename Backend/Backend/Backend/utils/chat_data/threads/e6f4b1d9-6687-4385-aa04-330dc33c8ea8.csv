@@ -1,5 +1,0 @@
-timestamp,role,content
-2025-05-02T11:09:58.386090,user,"Do you maintain documentation outlining how access to tenant/customer credentials is restricted, approved, and enforced using least privilege guidelines?"
-2025-05-02T11:09:58.410762,system,Yes
-2025-05-02T11:10:32.365963,user,Are provisions and/or terms for adherence to established information governance and security policies included within employment agreements?
-2025-05-02T11:10:32.395898,system,Yes

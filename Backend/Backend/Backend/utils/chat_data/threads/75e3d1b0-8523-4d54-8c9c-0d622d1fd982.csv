@@ -1,3 +1,0 @@
-timestamp,role,content
-2025-04-30T17:14:35.463584,user,Are constituents able to access scoped data?
-2025-04-30T17:14:35.465237,system,"{'query': 'Are constituents able to access scoped data?', 'context': 'Question: Are staff able to access client Scoped Data in an unencrypted state? | Answer: Yes | Details: nan | Category: Access Control', 'text': 'Staff are not able to access client Scoped Data in an unencrypted state. \n\n(Note: The original response is already in paragraph form)'}"

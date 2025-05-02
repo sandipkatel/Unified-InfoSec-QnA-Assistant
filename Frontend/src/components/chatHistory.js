@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   ShieldAlert,
 } from "lucide-react";
+import PolicyDocumentList from "./policyDocumentList";
 
 export default function ChatHistory({ darkMode }) {
   const [chatMessages, setChatMessages] = useState([
@@ -248,6 +249,7 @@ export default function ChatHistory({ darkMode }) {
   const handleDelete = (index) => {
     setTopics(topics.filter((_, i) => i !== index));
     setOpenMenuId(null);
+    processHistory("delete");
   };
 
   const startEditing = (index) => {
@@ -356,8 +358,9 @@ export default function ChatHistory({ darkMode }) {
             darkMode ? "bg-gray-700" : "bg-gray-50"
           } scrollbar-thin`}
           style={{
-            scrollbarWidth: "thin" 
-          }}>
+            scrollbarWidth: "thin",
+          }}
+        >
           {/*Chat History */}
           <div className="space-y-2" onClick={handleClickOutside}>
             {topics
@@ -458,7 +461,7 @@ export default function ChatHistory({ darkMode }) {
                         }`}
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDelete(index);
+                          handleDelete(index, topic.id);
                         }}
                       >
                         <Trash size={14} className="mr-2" />
@@ -480,10 +483,10 @@ export default function ChatHistory({ darkMode }) {
             Suggested Resources
           </h3>
           <div className="space-y-2">
-            {[
-              "Information Security Policy",
-              "Data Classification Guide",
-              "Encryption Standards",
+            {/* {[
+              "Access Control Policy",
+              "Incident Response Policy",
+              "Risk Management Policy",
             ].map((resource) => (
               <div
                 key={resource}
@@ -493,11 +496,17 @@ export default function ChatHistory({ darkMode }) {
                     : "bg-blue-50 border-blue-100 text-blue-700"
                 }`}
               >
-                <div className="text-sm font-medium">
+                <a
+                  key={resource}
+                  href={`/${resource}.pdf`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   {resource}
-                </div>
+                </a>
               </div>
-            ))}
+            ))} */}
+            <PolicyDocumentList />
           </div>
         </div>
       </div>
