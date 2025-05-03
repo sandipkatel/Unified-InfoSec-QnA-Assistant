@@ -115,6 +115,7 @@ def analyze_question(request):
                     Response style:
                     [your refined response with context preserved]
                     
+                    Only output the refined answer in natural language. Do not include any labels, brackets, or metadata in your response.
                     Context:
                     {context}
                     Question:
@@ -365,6 +366,8 @@ def analyze_questionnaire(request):
                     - Ensure that the context is in a readable format if it is not already.
                     - Do not change, add, or remove any words from the context. Preserve its original meaning exactly.
                     
+                    Only output the refined answer in natural language. Do not include any labels, brackets, or metadata in your response.
+                    
                     Response style:
                     [your refined response with context preserved]
                     
@@ -416,7 +419,7 @@ def analyze_questionnaire(request):
                 "question": question,
                 "suggestedAnswer": result.get("answer", "") + '. ' + result.get("details", ""),
                 "confidence_score": confidence_score * 100,  # Convert to percentage
-                "references": result.get("references", []) or result.get("category", [])
+                "references": result.get("references", []) or {"KL (" + result.get("category", []) + ")"},
             }
             print("ref", result_entry)
             
