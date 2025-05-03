@@ -145,9 +145,9 @@ def analyze_question(request):
         response_data = {
             "type": "system",
             "content": {"text": result.get("answer", "") + '. ' + result.get("details", '')},
-            "references": result.get("references", []) or result.get("category", []),
+            "references": result.get("references", []) or {"KL (" + result.get("category", []) + ")"},
             "confidence_score": calculate_confidence(result.get("score", 0.0)),
-            "all_matches": []  # add matches if needed
+            "all_matches": []  # add matches if needed 
         }
         print("response_data", response_data)
 

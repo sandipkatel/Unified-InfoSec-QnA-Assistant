@@ -375,6 +375,76 @@ export default function UnifiedQnAAssistant() {
     downloadFile(csvContent, filename, "text/csv");
   };
 
+  // Add this mapping const to the component, near the top with other state variables
+  const documentMappings = {
+    // Map document names or identifiers to their Drive URLs
+    // Format: "Document Name": "https://drive.google.com/file/d/SPECIFIC_FILE_ID/view"
+    "Data Privacy Policy":
+      "https://drive.google.com/file/d/11p8L6BqboUi5Q63FJDa0ONqr9u56Ri_c/view?usp=drive_link",
+    "Vulnerability Management Policy":
+      "https://drive.google.com/file/d/1H8JT8bZWx3YOa_uOviFb39meq98Xu6eA/view?usp=drive_link",
+    "Third-Party Vendor Management Policy":
+      "https://drive.google.com/file/d/1xm1jpb5fgKMptyGzRUJ0ZBHSdN5IFkhz/view?usp=drive_link",
+    "Software Development Life Cycle (SDLC) Policy":
+      "https://drive.google.com/file/d/1Ks66T3iJym3u0ESpqIDVhBiWo13H2eQI/view?usp=drive_link",
+    "Risk Management Policy":
+      "https://drive.google.com/file/d/1aqIlg1AIezs7XWv23GlqG0eif8Wmzzja/view?usp=drive_link",
+    "Remote Work and Remote Access Policy":
+      "https://drive.google.com/file/d/1kUWpiGqHABdkXF8BIYz5Nl1vBBplRioh/view?usp=drive_link",
+    "Password Management Policy":
+      "https://drive.google.com/file/d/1Nz6pYBCtIPbA7zLoKQImHjBZG_ZZ4_a3/view?usp=drive_link",
+    "Network Security Policy":
+      "https://drive.google.com/file/d/1MHXE98I0pwANkc4Yf055JpzWpGAOI-GI/view?usp=drive_link",
+    "Logging and Monitoring Policy":
+      "https://drive.google.com/file/d/1mr-IDvwj-IGh5EEW3jhXXMHvFc8xZA70/view?usp=drive_link",
+    "Information Security Policy":
+      "https://drive.google.com/file/d/1m9oSV2bSiDpjO8BzUHkERgh3ctU1dctn/view?usp=drive_link",
+    "Incident Response Policy":
+      "https://drive.google.com/file/d/1xDgrlHpDMag1bUHiMbS4fCAvAW0Y6Ed4/view?usp=drive_link",
+    "Encryption Management Policy":
+      "https://drive.google.com/file/d/1seYeUeJjgh27JHDFj_NEseWTerdbqXj_/view?usp=drive_link",
+    "Data Center Security Policy":
+      "https://drive.google.com/file/d/1USwf07Z09NRoPO7f8RAm7nDW-nEUz-f-/view?usp=drive_link",
+    "Cloud Security Policy":
+      "https://drive.google.com/file/d/1cczBDiYu2LhpOjR02NoKdARuEOVIxjnr/view?usp=drive_link",
+    "Business Continuity and Disaster Recovery (BCP_DR) Policy":
+      "https://drive.google.com/file/d/1nMCTuGtBJeJTUs6kTgqmHBYpqNqOCHud/view?usp=drive_link",
+    "Access Control Policy":
+      "https://drive.google.com/file/d/1BhrnzhWrFToXTz3dELuorLu65OfRkCh1/view?usp=drive_link",
+    "Acceptable Use Policy":
+      "https://drive.google.com/file/d/1KO2DXuG36DifbD6RvsvbprmNnfz-mrcz/view?usp=drive_link",
+  };
+
+  // Helper function to find the right link for a reference
+  const getDocumentLink = (reference) => {
+    // If it's already a URL, return it
+    if (reference.includes("drive.google.com") || reference.includes("http")) {
+      return reference;
+    }
+
+    // Normalize reference: remove file extensions and trim
+    const cleanRef = reference
+      .split(",")[0] // Remove ", page = N/A" and anything after comma
+      .replace(/\.[^/.]+$/g, "") // Remove one extension (.pdf)
+      .replace(/\.[^/.]+$/g, "") // Remove another extension (.docx)
+      .trim();
+    // Exact match
+    if (documentMappings[cleanRef]) {
+      console.log(documentMappings[cleanRef]);
+      return documentMappings[cleanRef];
+    }
+
+    // Partial match (e.g., "section 2.1 of Security Policy")
+    // for (const [docName, docLink] of Object.entries(documentMappings)) {
+    //   if (cleanRef.includes(docName) || reference.includes(docName)) {
+    //     return docLink;
+    //   }
+    // }
+
+    // Fallback to Drive search
+    return null;
+  };
+
   const handleFeedback = (questionId, feedbackType) => {
     // Update results with feedback
     setResults((prevResults) => {
@@ -945,16 +1015,51 @@ export default function UnifiedQnAAssistant() {
                     </div>
                     <ul className="space-y-1 text-sm">
                       {Array.isArray(item.references) ? (
-                        item.references.map((ref, idx) => (
-                          <li key={idx} className="flex items-start">
-                            <Info className="h-4 w-4 text-blue-500 mr-1 mt-0.5" />
-                            {ref}
-                          </li>
-                        ))
+                        item.references.map((ref, idx) => {
+                          const docLink = getDocumentLink(ref);
+                          const displayText = ref.includes("http")
+                            ? new URL(ref).pathname.split("/").pop() || ref
+                            : ref;
+
+                          return (
+                            <li key={idx} className="flex items-start">
+                              <Info className="h-4 w-4 text-blue-500 mr-1 mt-0.5" />
+                              <a
+                                href={docLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`${
+                                  darkMode
+                                    ? "text-blue-400 hover:text-blue-300"
+                                    : "text-blue-600 hover:text-blue-800"
+                                } underline`}
+                              >
+                                {displayText}
+                              </a>
+                            </li>
+                          );
+                        })
                       ) : (
                         <li className="flex items-start">
                           <Info className="h-4 w-4 text-blue-500 mr-1 mt-0.5" />
-                          {item.references}
+                          {typeof item.references === "string" && (
+                            <a
+                              href={getDocumentLink(item.references)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`${
+                                darkMode
+                                  ? "text-blue-400 hover:text-blue-300"
+                                  : "text-blue-600 hover:text-blue-800"
+                              } underline`}
+                            >
+                              {item.references.includes("http")
+                                ? new URL(item.references).pathname
+                                    .split("/")
+                                    .pop() || item.references
+                                : item.references}
+                            </a>
+                          )}
                         </li>
                       )}
                     </ul>
@@ -1165,14 +1270,14 @@ export default function UnifiedQnAAssistant() {
           </svg>
           Download CSV
         </button>
-        <button
+        {/* <button
           className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition"
           onClick={() =>
             showNotification("Answers submitted successfully!", "success")
           }
         >
           Submit Answers
-        </button>
+        </button> */}
       </div>
     </div>
   );

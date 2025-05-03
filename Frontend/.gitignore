@@ -44,3 +44,4 @@ next-env.d.ts
 # Ignore all .venv folders
 # Ignore all .venv folders in any subdirectory
 */.venv/
+analytics
