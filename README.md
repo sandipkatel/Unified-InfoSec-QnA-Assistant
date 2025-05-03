@@ -33,14 +33,18 @@ This project uses **Next.js (frontend)**, **Django (backend)**, and **LLMs with 
 
 ---
 ### Start Backend
+```bash
 cd Backend
 pip install -r requirements.txt
 cd Backend
 python manage.py runserver 8080
+```
 
 ### Start Frontend 
+```bash
 cd Frontend
 npm run dev
+```
 
 ### Note: 
 For system to work properly you myst have installed OLLAMA 3.2 locally
@@ -48,4 +52,4 @@ For system to work properly you myst have installed OLLAMA 3.2 locally
 ---
 
 ## Demo Video
-[Click Here](https://youtu.be/KaE8VwQH2YA)
+[Click Here](https://youtu.be/-T9_mN8g5aE)
