@@ -49,6 +49,8 @@ npm run dev
 ### Note: 
 For system to work properly you myst have installed OLLAMA 3.2 locally
 
+#### SecurityPal Hackathon Winning Project 😉 
+
 ---
 
 ## Demo Video
